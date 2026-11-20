@@ -97,6 +97,8 @@ When the hook throws, the invite stays pending and redeemable later: for activat
 
 App-admin only: disable, enable, and delete organizations. A disabled org refuses invite creation, redemption, and org plugin mutations. Its members also lose invite management: listing, resending, revoking, and deleting its invites and reading its seat usage all fail with `ORG_DISABLED`, while app admins can still list, revoke, and delete them. Member accounts are never touched by default; `banMembers: true` additionally bans every member app-wide, for fraud takedowns, and ends their sessions wherever sessions are stored (database, secondary storage such as Redis, or both). Deleting an organization also clears it from sessions that had it active.
 
+`banMembers` never bans platform staff: the admin making the call and anyone who may run platform controls (the `manage-orgs` invite permission) are skipped and reported as `skippedMembers`, so a takedown cannot lock the administrators out. Bans carry the reason `Organization suspended by administrator (org:<id>)`. Enabling the org keeps them by default; `enable({ organizationId, unbanMembers: true })` lifts exactly the bans this org's takedown stamped and returns `unbannedMembers`. Members banned for another reason, or by another org's takedown since, stay banned. Cancelled invites are not restored.
+
 <Callout type="warn" title="Cookie cache">
   With Better Auth's `session.cookieCache` enabled, a session ended on the server can keep
   validating from the signed cookie until the cache expires (`maxAge`, default 5 minutes). Better

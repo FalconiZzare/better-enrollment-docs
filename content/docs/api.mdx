@@ -63,7 +63,7 @@ authClient.invite.activate({ token });
 authClient.invite.org.usage({ organizationId });
 authClient.invite.org.setSeatLimit({ organizationId, seatLimit });
 authClient.invite.org.disable({ organizationId, banMembers? });
-authClient.invite.org.enable({ organizationId });
+authClient.invite.org.enable({ organizationId, unbanMembers? });
 authClient.invite.org.delete({ organizationId, banMembers? });
 ```
 
