@@ -24,6 +24,8 @@ After acceptance the user is verified and the shell guards no longer apply, so O
 
 The hooks cost nothing on ordinary logins. Email and password, username, OAuth and passkey sign-ins need an account, which a shell can never get, so they skip the check. Sign-ins that need no account, email verifications and new accounts each do one indexed lookup in invite-only mode. Open mode does none.
 
+On Better Auth 1.6, a refused email verification surfaces differently: 1.6 runs database after-hooks once the response is built, so the refusal rejects the request handler (most servers answer `500`) instead of returning `403 INVITATION_REQUIRED`. The outcome is the same on every version: the user stays unverified and gets no session.
+
 ## Why the password-reset hook exists
 
 A private invite pre-creates an inert user, which locks the email. The database hooks already stop a reset from completing on that user. The request hook makes sure no reset mail is sent for it in the first place, so outsiders cannot probe the endpoint to learn who has been invited. It returns Better Auth's own generic success response, byte-identical to the unknown-email case.
