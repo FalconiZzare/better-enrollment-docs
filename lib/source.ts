@@ -5,6 +5,7 @@ import { docsContentRoute, docsImageRoute, docsRoute, PAGE_STATUSES } from "./sh
 import { defineDocs } from "fumadocs-mdx/macro";
 import { metaSchema, pageSchema } from "fumadocs-core/source/schema";
 import { renderStatusBadge } from "@/components/status-badge";
+import { archivedVersionOf } from "./versions";
 import * as z from "zod";
 
 const docs = defineDocs({
@@ -30,6 +31,11 @@ export const source = loader({
   source: docs.toFumadocsSource(),
   plugins: [lucideIconsPlugin(), statusBadgesPlugin({ renderBadge: renderStatusBadge })]
 });
+
+/** Pages of the latest docs version; archived versions excluded. */
+export function latestPages() {
+  return source.getPages().filter((page) => !archivedVersionOf(page.slugs));
+}
 
 export function getPageImageUrl(page: (typeof source)["$inferPage"]) {
   const segments = [...page.slugs, "image.png"];
