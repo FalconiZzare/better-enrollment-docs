@@ -61,6 +61,18 @@ One place still answers differently for known and unknown addresses: a signed-ou
 
 The `SIGN_IN_REQUIRED` answer also covers activation invites called through `/invite/accept` directly: an invite issued to an already-established account can only merge inside that account's own session, never set its password from the token. The invite token proves mailbox control; changing or joining an existing account requires proof of account control, which is a session.
 
+## What your app must still do
+
+The plugin guards its own flows and every invite's pre-created user. These parts stay with your app:
+
+- **Close sign-up paths the plugin cannot see.** Invite-only [mode detection](/docs/modes) checks email and password and the social providers. Sign-up through other plugins (magic link, email OTP, passkey, phone number, anonymous, generic OAuth) creates brand-new users the plugin never sees: set each plugin's own `disableSignUp`, or gate them with `user.validateUserInfo`. Pre-created users are covered on every path either way; a built-in backstop for new users is planned for the next major version.
+- **Keep `requireEmailVerification: true`** when you issue public invites, so an address registered through a public link cannot be signed into without its mailbox. See [What callers can learn](#what-callers-can-learn).
+- **Set `baseURL` or `buildInviteUrl`,** so invite links never take their host from a request.
+- **Prefer this plugin's invites for seat-limited orgs.** The organization plugin's own `/organization/invite-member` and `/organization/accept-invitation` are checked against the seat limit, but not atomically; under heavy concurrency, invite through Better Enrollment or disable those endpoints. See [Seat limits](/docs/organizations#seat-limits).
+- **Check `disabledAt` in your own routes.** Disabling an org blocks its invites and organization plugin routes, not your application's data.
+- **Escape inviter-chosen text** (`name`, `organizationName`) in your email templates.
+- **Send full role lists** when you change roles outside invites; the admin plugin's `setRole` overwrites the field. See [the recipe](/docs/recipes#changing-roles-without-losing-invite-granted-ones).
+
 ## Hardening options
 
 - **Public roles:** `publicInviteRoles` and `organization.publicInviteRoles` cap what a public link can grant; see [Roles](/docs/options#roles).

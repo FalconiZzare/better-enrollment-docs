@@ -220,7 +220,7 @@ const { data: invite } = await authClient.invite.get({ token });
 await authClient.invite.redeem({ token, password, name, email });
 // -> { action: "ACCEPTED", organization? }
 
-// 4. Sign them in; redemption never creates a session
+// 4. Sign them in; a password redemption creates no session
 await authClient.signIn.email({ email, password });
 ```
 

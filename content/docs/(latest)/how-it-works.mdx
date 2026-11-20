@@ -75,7 +75,7 @@ export const auth = betterAuth({
 });
 ```
 
-Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in through your normal flow with the credentials they just set. See [The invite page](/docs/invite-page#redeeming). And when an invitation email goes missing, [`invite.resend`](/docs/invites#resending-an-invitation) invalidates the old link and delivers a fresh one.
+A redemption that sets a password never signs anyone in: after `ACCEPTED`, the user signs in through your normal flow with the credentials they just set. On [passwordless](/docs/magic-link) apps a private redemption signs the user in directly (`signedIn: true`), since the emailed token already proved the mailbox; public redemptions never do. See [The invite page](/docs/invite-page#redeeming). And when an invitation email goes missing, [`invite.resend`](/docs/invites#resending-an-invitation) invalidates the old link and delivers a fresh one.
 
 ## The guarantees
 

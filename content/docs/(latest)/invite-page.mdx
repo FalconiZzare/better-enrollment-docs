@@ -101,7 +101,7 @@ await authClient.invite.redeem({
 
 `name` is required whenever the redemption signs the invitee up (`nextAction: "SIGN_UP"`); a sign-up without a name defeats the profile-populating point of the flow, so it fails with `NAME_REQUIRED`. Sign-in and confirm flows act on an existing account and take no name; a `CONFIRM` redemption still submits any additional fields configured for that step, in the same body.
 
-Redemption never creates a session. After `ACCEPTED` in the sign-up flow, your page already holds the email and password it just collected, so sign the user in with them:
+A redemption that sets a password creates no session (a passwordless private redemption signs the user in and returns `signedIn: true`). After `ACCEPTED` in the sign-up flow, your page already holds the email and password it just collected, so sign the user in with them:
 
 ```ts
 await authClient.signIn.email({ email, password });
