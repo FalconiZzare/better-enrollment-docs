@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { appDescription, appName, author, siteUrl } from "@/lib/shared";
 import { JsonLd } from "@/components/json-ld";
 import { siteGraph } from "@/lib/schema";
-import { LATEST_VERSION, SEARCH_VERSION_TAGS } from "@/lib/versions";
+import { VersionedSearchDialog } from "@/components/search-dialog";
 
 const inter = Inter({
   subsets: ["latin"]
@@ -27,13 +27,7 @@ export default function Layout({ children }: LayoutProps<"/">) {
     <html lang="en" className={inter.className} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <JsonLd data={siteGraph} />
-        <RootProvider
-          search={{
-            options: { defaultTag: LATEST_VERSION.tag, tags: SEARCH_VERSION_TAGS }
-          }}
-        >
-          {children}
-        </RootProvider>
+        <RootProvider search={{ SearchDialog: VersionedSearchDialog }}>{children}</RootProvider>
       </body>
     </html>
   );

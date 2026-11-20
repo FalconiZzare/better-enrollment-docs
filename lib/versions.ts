@@ -14,9 +14,28 @@
  * out of the sitemap, llms.txt and search engines, and show a banner.
  */
 export const DOC_VERSIONS = [
-  { label: "v0.8.0", slug: null, tag: "latest" },
-  { label: "v0.7.0", slug: "v0.7.0", tag: "v0.7.0" }
+  { label: "v0.8.0", title: "Latest Version", slug: null, tag: "latest" },
+  { label: "v0.7.0", title: "Version 0.7", slug: "v0.7.0", tag: "v0.7.0" }
 ] as const;
+
+export type DocVersion = (typeof DOC_VERSIONS)[number];
+
+/** The version a docs URL belongs to, and the page path inside it. */
+export function versionOfPath(pathname: string): { version: DocVersion; rest: string } {
+  const rest = pathname.replace(/^\/docs/, "");
+  for (const v of archived) {
+    const prefix = `/${v.slug}`;
+    if (rest === prefix || rest.startsWith(`${prefix}/`)) {
+      return { version: v, rest: rest.slice(prefix.length) };
+    }
+  }
+  return { version: LATEST_VERSION, rest };
+}
+
+/** The same page in another version. */
+export function pathInVersion(version: DocVersion, rest: string): string {
+  return `/docs${version.slug ? `/${version.slug}` : ""}${rest}`;
+}
 
 export const LATEST_VERSION = DOC_VERSIONS[0];
 
