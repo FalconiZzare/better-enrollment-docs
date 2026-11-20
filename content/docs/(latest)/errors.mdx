@@ -31,15 +31,15 @@ Not every error from an invite endpoint is one of the codes below. When your own
 
 ## Roles and permissions
 
-| Code                            | When                                                                                                |
-| ------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `INVALID_ROLE`                  | Role rejected at create                                                                             |
-| `ROLE_NO_LONGER_VALID`          | The invited role no longer exists at redeem                                                         |
-| `ROLE_NOT_ALLOWED_FOR_ORG_JOIN` | `org-join` invites cannot set an app role                                                           |
-| `NOT_ALLOWED_TO_MANAGE_INVITES` | Failed the admin gate                                                                               |
-| `ROLE_NOT_GRANTABLE`            | The creator or public-link resender may not [grant](/docs/permissions#granting-roles) that app role |
-| `ORG_ROLE_NOT_GRANTABLE`        | The inviter or public-link resender may not grant that org role                                     |
-| `CANNOT_REDEEM_OWN_INVITE`      | Redeeming your own invite needs full authority over the roles it grants                             |
+| Code                            | When                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `INVALID_ROLE`                  | Role rejected at create                                                                                |
+| `ROLE_NO_LONGER_VALID`          | The invited role no longer exists at redeem                                                            |
+| `ROLE_NOT_ALLOWED_FOR_ORG_JOIN` | `org-join` invites cannot set an app role                                                              |
+| `NOT_ALLOWED_TO_MANAGE_INVITES` | Failed the admin gate (without the organization plugin, also any non-admin addressing an invite by id) |
+| `ROLE_NOT_GRANTABLE`            | The creator or public-link resender may not [grant](/docs/permissions#granting-roles) that app role    |
+| `ORG_ROLE_NOT_GRANTABLE`        | The inviter or public-link resender may not grant that org role                                        |
+| `CANNOT_REDEEM_OWN_INVITE`      | Redeeming your own invite needs full authority over the roles it grants                                |
 
 ## Redemption guards
 
@@ -56,13 +56,13 @@ Not every error from an invite endpoint is one of the codes below. When your own
 
 ## Organizations
 
-| Code                       | When                                                                                                                 |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `SEAT_LIMIT_REACHED`       | No seats left: at create, resend of an expired invite, redeem, or the org plugin's invite-member / accept-invitation |
-| `MEMBERSHIP_LIMIT_REACHED` | The org plugin's `membershipLimit` is reached (only with `respectMembershipLimit`)                                   |
-| `ORG_INVITE_NOT_ALLOWED`   | Not permitted to invite into that organization                                                                       |
-| `ORG_DISABLED`             | The organization is disabled: create, redeem, and org members managing its invites or usage                          |
-| `ORG_SLUG_TAKEN`           | Slug collision while founding an organization the founder names (preset slugs get a suffix)                          |
+| Code                       | When                                                                                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SEAT_LIMIT_REACHED`       | No seats left: at create, resend of an expired invite, redeem, or the org plugin's invite-member / accept-invitation                                 |
+| `MEMBERSHIP_LIMIT_REACHED` | The org plugin's `membershipLimit` is reached (only with `respectMembershipLimit`)                                                                   |
+| `ORG_INVITE_NOT_ALLOWED`   | Not permitted to invite into that organization; with the organization plugin, also any invite id the caller may not manage, whether or not it exists |
+| `ORG_DISABLED`             | The organization is disabled: create, redeem, and org members managing its invites or usage                                                          |
+| `ORG_SLUG_TAKEN`           | Slug collision while founding an organization the founder names (preset slugs get a suffix)                                                          |
 
 ## Listing [!new]
 

@@ -51,9 +51,13 @@ An invite that grants a role is a role assignment, so the right to send invites 
 
 See [Permissions: granting roles](/docs/permissions#granting-roles).
 
-## No account oracles
+## What callers can learn
 
-When a signed-out visitor tries to accept a public invite with an email that already has an account, the response is the same `SIGN_IN_REQUIRED` action the activation flow uses, so the endpoint never confirms whether an account exists. The same guard covers activation invites called through `/invite/accept` directly: an invite issued to an already-established account can only merge inside that account's own session, never set its password from the token. The invite token proves mailbox control; changing or joining an existing account requires proof of account control, which is a session.
+Invite management never reports more than the caller may manage. `resend`, `revoke`, `delete` and `uses` check the caller's rights before anything else, so a caller without them gets one error for every invite id: pending, revoked, accepted or nonexistent. That error is `NOT_ALLOWED_TO_MANAGE_INVITES` in apps without the organization plugin and `ORG_INVITE_NOT_ALLOWED` in apps with it; it depends on your setup, never on the invite. `invite.list` hides other users' internal ids (`preCreatedUserId`, `createdByUserId`, `revokedByUserId`) from org inviters, since a missing pre-created user would tell them the address already had an account; app admins still see them.
+
+One place still answers differently for known and unknown addresses: a signed-out visitor accepting a **public** invite. A known address gets `SIGN_IN_REQUIRED` (the activation flow's answer); an unknown one is registered, unverified, with the password the visitor typed, and gets `ACCEPTED`. Anyone holding a public link can therefore tell whether an address has an account, and can occupy an address they do not own. The redemption rate limit (5 per minute per client) slows probing. Keep `emailAndPassword.requireEmailVerification: true` so a squatted address cannot be signed into without the mailbox; in invite-only mode the plugin logs a warning at startup when it is off. Prefer private invites where the address matters. Making both answers identical changes the response, so it is planned for the next major version.
+
+The `SIGN_IN_REQUIRED` answer also covers activation invites called through `/invite/accept` directly: an invite issued to an already-established account can only merge inside that account's own session, never set its password from the token. The invite token proves mailbox control; changing or joining an existing account requires proof of account control, which is a session.
 
 ## Tokens
 

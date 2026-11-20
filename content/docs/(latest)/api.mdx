@@ -44,7 +44,7 @@ do {
 } while (cursor);
 ```
 
-Each listed invite carries its most recent redemptions in `uses`, read in one query of up to 1000 rows for the whole page. When a busy public invite does not fit, its `usesTruncated` is `true`; `uses` pages through one invite's complete audit trail, newest first, with the same opaque `nextCursor` (default `limit` 50, at most 100). It follows `list`'s visibility rules: a caller who may not list an invite gets `NOT_ALLOWED_TO_MANAGE_INVITES` whether or not it exists.
+Each listed invite carries its most recent redemptions in `uses`, read in one query of up to 1000 rows for the whole page. When a busy public invite does not fit, its `usesTruncated` is `true`; `uses` pages through one invite's complete audit trail, newest first, with the same opaque `nextCursor` (default `limit` 50, at most 100). It follows `list`'s visibility rules: a caller who may not list an invite gets the same error whether or not it exists (see [What callers can learn](/docs/security#what-callers-can-learn)). For org inviters, `list` leaves out `preCreatedUserId`, `createdByUserId` and `revokedByUserId`.
 
 `resend` rotates the token and expiry on any pending invite, invalidating the previous link and redelivering it; see [Resending an invitation](/docs/invites#resending-an-invitation).
 
