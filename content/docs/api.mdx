@@ -123,4 +123,4 @@ Built-in limits: `/invite/accept`, `/invite/activate`, and `/invite/redeem` allo
 
 ## Revoke, delete, and the email lock
 
-In short: `invite.revoke` cancels an invite but keeps its protections active, `invite.delete` also removes the pre-created user and frees the address, and accepted invites are permanent audit records that cannot be deleted. The full semantics of the email lock, and why revoking is deliberately softer than deleting, are on the [Security page](/docs/security#the-email-lock).
+In short: `invite.revoke` cancels an invite and removes its never-redeemed pre-created user, `invite.delete` also removes the invite row and frees the address, and accepted invites are permanent audit records that cannot be deleted. The full semantics of the email lock are on the [Security page](/docs/security#the-email-lock).

@@ -99,10 +99,11 @@ For apps signing in with the [magic-link plugin](/docs/magic-link). Auto-detecte
 
 ```ts title="auth.ts"
 betterEnrollment({
-  passwordless: "auto", // true | false | "auto" (magic link present, no emailAndPassword)
-  passwordlessVerifyPaths: ["/magic-link/verify"] // paths the sign-in backstop guards
+  passwordless: "auto" // true | false | "auto" (magic link present, no emailAndPassword)
 });
 ```
+
+`passwordlessVerifyPaths` is deprecated and ignored: pre-created users are refused a session on every path.
 
 ## Additional fields
 

@@ -37,15 +37,16 @@ Not every error from an invite endpoint is one of the codes below. When your own
 
 ## Redemption guards
 
-| Code                        | When                                                                      |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `PASSWORD_NOT_AVAILABLE`    | A password was sent to a [passwordless app](/docs/magic-link)             |
-| `EMAIL_MISMATCH`            | Open-mode activation guard: the emails do not match                       |
-| `EMAIL_NOT_VERIFIED`        | Open-mode activation guard: the email is not verified                     |
-| `USER_BANNED`               | Banned accounts cannot redeem                                             |
-| `NAME_REQUIRED`             | Sign-up redemption without a name                                         |
-| `ADDITIONAL_FIELD_REQUIRED` | A required [additional field](/docs/options#additional-fields) is missing |
-| `ADDITIONAL_FIELD_INVALID`  | An additional field failed its type check or validator                    |
+| Code                        | When                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `PASSWORD_NOT_AVAILABLE`    | A password was sent to a [passwordless app](/docs/magic-link)                                   |
+| `EMAIL_MISMATCH`            | Open-mode activation guard: the emails do not match                                             |
+| `EMAIL_NOT_VERIFIED`        | Open-mode activation guard: the email is not verified                                           |
+| `USER_BANNED`               | Banned accounts cannot redeem                                                                   |
+| `INVITATION_REQUIRED`       | Verifying, signing in, or adding an account to a pre-created user before its invite is redeemed |
+| `NAME_REQUIRED`             | Sign-up redemption without a name                                                               |
+| `ADDITIONAL_FIELD_REQUIRED` | A required [additional field](/docs/options#additional-fields) is missing                       |
+| `ADDITIONAL_FIELD_INVALID`  | An additional field failed its type check or validator                                          |
 
 ## Organizations
 

@@ -6,31 +6,36 @@ icon: ShieldCheck
 
 ## What is blocked in invite-only mode
 
-While a private invite is pending:
+A private invite pre-creates its user, the shell. The shell holds only `defaultRole`; the invited role is written when the invite is redeemed. While the invite is not accepted, redemption is the shell's only way in. This is enforced on the user row by database hooks, so it holds on every path, including plugins Better Enrollment does not know about:
 
-| Attempt                                    | Blocked by                                                                         | Response                                |
-| ------------------------------------------ | ---------------------------------------------------------------------------------- | --------------------------------------- |
-| `POST /sign-up/email`                      | Better Auth `disableSignUp`                                                        | `EMAIL_PASSWORD_SIGN_UP_DISABLED`       |
-| `POST /sign-in/email`                      | No credential account exists yet                                                   | `INVALID_EMAIL_OR_PASSWORD`             |
-| `POST /request-password-reset`             | Plugin before-hook                                                                 | Silent success, nothing sent, no oracle |
-| OAuth sign-up as a new user                | Provider `disableSignUp`                                                           | Redirect with `?error=signup_disabled`  |
-| OAuth linking to the pre-created user      | `requireLocalEmailVerified` plus an `account.create.before` hook                   | Account not linked                      |
-| `POST /sign-in/magic-link`                 | Plugin before-hook                                                                 | Silent success, nothing sent, no oracle |
-| Magic-link sign-in to the pre-created user | Plugin before-hook on `/magic-link/verify` plus a `session.create.before` backstop | `INVITATION_REQUIRED`                   |
+| Attempt                                                                                                   | Blocked by                                                 | Response                                |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------- |
+| `POST /sign-up/email`                                                                                     | Better Auth `disableSignUp`                                | `EMAIL_PASSWORD_SIGN_UP_DISABLED`       |
+| `POST /sign-in/email`                                                                                     | No credential account exists, and none can be created      | `INVALID_EMAIL_OR_PASSWORD`             |
+| `POST /request-password-reset`                                                                            | Plugin before-hook                                         | Silent success, nothing sent, no oracle |
+| Password reset (core or email OTP) completing on the shell                                                | `account.create.before`: no account of any kind on a shell | `INVITATION_REQUIRED`                   |
+| OAuth sign-up as a new user                                                                               | Provider `disableSignUp`                                   | Redirect with `?error=signup_disabled`  |
+| OAuth or any other account linking to the shell                                                           | `account.create.before`                                    | Account not linked                      |
+| Email verification (`/verify-email`, email OTP verify)                                                    | `user.update` hooks: the verified flag is reverted         | `INVITATION_REQUIRED`                   |
+| `POST /sign-in/magic-link`                                                                                | Plugin before-hook                                         | Silent success, nothing sent, no oracle |
+| Any sign-in that needs no account (magic link, email OTP, auto sign-in after verification, other plugins) | `session.create.before`                                    | `INVITATION_REQUIRED`                   |
 
-After acceptance the user is verified, so OAuth linking and [magic-link sign-in](/docs/magic-link) work normally.
+After acceptance the user is verified and the shell guards no longer apply, so OAuth linking, [magic-link sign-in](/docs/magic-link) and email OTP work normally.
+
+The hooks cost nothing on ordinary logins. Email and password, username, OAuth and passkey sign-ins need an account, which a shell can never get, so they skip the check. Sign-ins that need no account, email verifications and new accounts each do one indexed lookup in invite-only mode. Open mode does none.
 
 ## Why the password-reset hook exists
 
-A private invite pre-creates an inert user, which locks the email. Without the hook, whoever controls the mailbox could set a password through the reset flow and skip the invite entirely, and outsiders could probe the endpoint to learn who has been invited. The hook returns Better Auth's own generic success response, byte-identical to the unknown-email case, and sends nothing.
+A private invite pre-creates an inert user, which locks the email. The database hooks already stop a reset from completing on that user. The request hook makes sure no reset mail is sent for it in the first place, so outsiders cannot probe the endpoint to learn who has been invited. It returns Better Auth's own generic success response, byte-identical to the unknown-email case.
 
 ## The email lock
 
 An address stays locked within one scope while a pending invite row exists for it, even past `expiresAt`; re-inviting the same thing returns `CONFLICT` and [resend](/docs/invites#resending-an-invitation) is the way to revive it. A scope is one `kind` plus, for `org-join`, one organization. Invites in different scopes always coexist: the same person can hold pending invites to several orgs, or to the app and an org, and an org inviter cannot probe for pending invites outside their own org.
 
-Coexisting invites are safe because redemption follows the account's live state rather than which invite pre-created it. An inert shell (unverified, no credentials) is claimed by whichever valid private token for that email is redeemed first, in one sign-up; every other invite to that address then becomes an activation (sign in, confirm, roles merge). Every private token proves control of the same mailbox, so which one arrives first grants nothing extra. `invite.delete` removes a pending or cancelled invite plus its still-inert pre-created user, which frees the address; a coexisting invite whose shell was removed this way simply creates the account at redemption. Accepted invites are permanent audit records and cannot be deleted.
+Coexisting invites are safe because redemption follows the account's live state rather than which invite pre-created it. An inert shell (unverified, no credentials) is claimed by whichever valid private token for that email is redeemed first, in one sign-up; every other invite to that address then becomes an activation (sign in, confirm, roles merge). Every private token proves control of the same mailbox, so which one arrives first grants nothing extra. `invite.delete` removes a pending or cancelled invite plus its pre-created user, which frees the address; a coexisting invite whose shell was removed this way simply creates the account at redemption. Accepted invites are permanent audit records and cannot be deleted.
 
-Revoking is softer than deleting: the pre-created user stays behind, so both the password-reset hook and the OAuth-linking hook keep blocking for any non-accepted invite (pending or cancelled), not just pending ones.
+A withdrawn invite never leaves an account behind. Revoke, delete, expiry cleanup and organization deletion all remove the invite's shell as long as it never redeemed anything, whatever state it reached. A user with a recorded redemption is a real account and is never removed this way.
+
 
 ## No account oracles
 

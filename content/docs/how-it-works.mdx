@@ -82,7 +82,7 @@ Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in thr
 - **A database leak exposes no usable links.** Tokens are crypto-random and stored SHA-256 hashed; the raw token is never persisted.
 - **Exactly one winner.** All state changes are guarded atomic writes: parallel redemptions of a one-seat invite produce exactly one winner.
 - **No cron, nothing to sweep.** Expiry is derived from `expiresAt` at read time.
-- **Pending invites lock their email.** While a private invite is pending, its email is locked on every path: sign-in, sign-up, password reset, and OAuth linking are all blocked without leaking that the invite exists.
+- **Pending invites lock their email.** A private invite pre-creates its user with only the default role. Until the invite is redeemed, database hooks refuse to verify that user, sign it in, or attach any account to it, on every path, without leaking that the invite exists. Withdrawing the invite removes the user.
 
 <Callout type="warn" title="Role changes made outside this plugin do not merge">
   The union merge above applies only to roles granted through invite redemption. Better Auth stores
