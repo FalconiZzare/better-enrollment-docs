@@ -17,14 +17,14 @@ Not every error from an invite endpoint is one of the codes below. When your own
 
 ## Invite state
 
-| Code                    | When                                                                                                        |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `INVITE_NOT_FOUND`      | Unknown or no longer valid token                                                                            |
-| `INVITE_EXPIRED`        | The invite passed its `expiresAt`                                                                           |
-| `INVITE_REVOKED`        | The invite was revoked                                                                                      |
-| `INVITE_ALREADY_USED`   | A single-use invite was already redeemed, or a public invite hit its use cap                                |
-| `EMAIL_ALREADY_INVITED` | A pending invite of the same kind (and, for `org-join`, the same org) already holds that address; resend it |
-| `USER_ALREADY_EXISTS`   | `app` invite to an address that already has an established account                                          |
+| Code                    | When                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `INVITE_NOT_FOUND`      | Unknown or no longer valid token                                                                                                                                |
+| `INVITE_EXPIRED`        | The invite passed its `expiresAt`                                                                                                                               |
+| `INVITE_REVOKED`        | The invite was revoked, or [withdrawn automatically](/docs/organizations#when-invites-are-withdrawn-automatically) because its inviter or invitee lost standing |
+| `INVITE_ALREADY_USED`   | A single-use invite was already redeemed, or a public invite hit its use cap                                                                                    |
+| `EMAIL_ALREADY_INVITED` | A pending invite of the same kind (and, for `org-join`, the same org) already holds that address; resend it                                                     |
+| `USER_ALREADY_EXISTS`   | `app` invite to an address that already has an established account                                                                                              |
 
 ## Roles and permissions
 

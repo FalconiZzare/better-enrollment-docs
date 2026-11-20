@@ -208,6 +208,15 @@ betterEnrollment({
   onInviteRevoked,
   onInviteDeleted,
   onInviteExpired,
-  onInvalidRole
+  onInvalidRole,
+  onInvitesCancelled // ({ reason, inviteIds, deleted, userId, organizationId }) => void
+});
+```
+
+`onInvitesCancelled` fires when the plugin withdraws invites on its own because their inviter or invitee lost standing; see [When invites are withdrawn automatically](/docs/organizations#when-invites-are-withdrawn-automatically). It is called once per batch of up to 1000 invites, and its errors are logged without undoing the cancellation.
+
+```ts title="auth.ts"
+betterEnrollment({
+  revalidateInviterOnRedeem: false // true: re-check the creator's rights at redemption
 });
 ```

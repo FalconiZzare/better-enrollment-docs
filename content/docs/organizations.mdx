@@ -119,6 +119,22 @@ App admins come from the admin plugin's AC file (`ac` and `roles` passed to the 
 
 One actor sits outside this table: trusted server code. The server-only [`createSystemInvite`](/docs/api#server-only) endpoint can create any invite kind, including `org-join`, without a session or org membership; seat limits, disabled-org checks, and the `allowOwnerInvites` switch still apply. System invites store a self-declared inviter and, unless the caller passes `inviter.userId`, a null `createdByUserId`, so they remain distinguishable from member-created invites in the audit trail. When your server sends an invite on someone's behalf (for example a parent organization inviting a child organization's first owner), pass their id as `inviter.userId`: the invite is attributed to them and cleaned up with their other pending invites if they are banned or removed. Either way, attribution is only as trustworthy as the code that called the endpoint.
 
+## When invites are withdrawn automatically
+
+An invite never outlives its inviter's standing. Pending invites are cancelled, and their pre-created users removed, when:
+
+| Event                                                                          | Invites withdrawn                                                                | `reason`                                        |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ----------------------------------------------- |
+| The inviter is banned, from any path (`ban-user`, `update-user`, `banMembers`) | All of the inviter's pending invites (unless `revokeInvitesOnInviterBan: false`) | `inviter-banned`                                |
+| The inviter's account is deleted (admin `remove-user`, self-delete)            | All of the inviter's pending invites, deleted                                    | `inviter-deleted`                               |
+| The account an invite is addressed to is deleted                               | Pending private invites to that address, so they cannot recreate it              | `invitee-deleted`                               |
+| The inviter is removed from the org, or leaves it                              | The inviter's pending `org-join` invites for that org                            | `inviter-removed-from-org` / `inviter-left-org` |
+| The inviter's org role changes                                                 | Only those the new role may no longer create or grant                            | `inviter-role-changed`                          |
+
+Bans and deletions are caught by database hooks, whatever endpoint made the change. The org plugin writes membership rows directly, so membership changes are caught on its `remove-member`, `leave` and `update-member-role` endpoints. As a backstop, redemption and `invite.get` withdraw an invite whose creator no longer exists or is banned (`inviter-inactive`), so a change made outside those paths still cannot be used. With `revalidateInviterOnRedeem: true` the backstop also re-checks the creator's current rights; leave it off if `createSystemInvite` attributes invites to users who are not members of the target org.
+
+Redeeming a withdrawn invite returns `INVITE_REVOKED`. Each batch is reported to [`onInvitesCancelled`](/docs/options#lifecycle-hooks). None of this costs anything on sign-in or ordinary requests: the hooks query only when a ban, a deletion or a membership change actually happens, and the backstop is one lookup per redemption.
+
 ## Where to go next
 
 <Cards>
