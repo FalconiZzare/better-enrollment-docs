@@ -186,6 +186,9 @@ betterEnrollment({
     orgCreateRole: "owner",
     defaultSeatLimit: undefined,
     resolveSeatLimit: undefined, // async (org) => number | null
+    enforceSeatLimitOnOrgPlugin: true, // seat limit on the org plugin's invite-member / accept-invitation
+    runOrgPluginHooks: false, // call organizationHooks before/afterAddMember on redemption
+    respectMembershipLimit: false, // enforce the org plugin's membershipLimit (default 100) on redemption
     revokeInvitesOnInviterBan: true,
     beforeOrgCreate: undefined, // ({ invite, user, organization }) => extra org fields, or throw
     onOrgMemberAdded,

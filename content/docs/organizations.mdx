@@ -40,7 +40,13 @@ Redeeming an org invite writes the member row (and team membership when `teamId`
 
 ## Seat limits
 
-Seat limits resolve in order: `resolveSeatLimit(org)` callback, the org's `seatLimit` column, `defaultSeatLimit`, then unlimited. Seats used = members + pending invite reservations (a private invite reserves one seat, a public one reserves `maxUses - useCount`). Enforcement happens at creation and again inside a guarded write at redemption, so parallel accepts never overshoot.
+Seat limits resolve in order: `resolveSeatLimit(org)` callback, the org's `seatLimit` column, `defaultSeatLimit`, then unlimited. Seats used = members + pending invite reservations (a private invite reserves one seat, a public one reserves `maxUses - useCount`). Enforcement happens at creation, at resend of an expired invite, and again at redemption, each as write-then-verify: after writing, the plugin re-reads the total and backs its own write out if the org is over the limit. Members never exceed the limit, even under parallel requests; two requests racing for the very last seat may both be refused.
+
+The organization plugin's own invitations are held to the same limit: `/organization/invite-member` and `/organization/accept-invitation` return `SEAT_LIMIT_REACHED` when the org is full. These two checks cannot be atomic, since the org plugin does the writing; for strict limits under heavy concurrency, invite through Better Enrollment. Set `organization.enforceSeatLimitOnOrgPlugin: false` to turn them off. The org plugin's server-only `addMember` is trusted server code and never checked. Orgs without a seat limit pay nothing for any of this.
+
+By default a redemption does not run the org plugin's `organizationHooks` or its `membershipLimit`. Opt in with `organization.runOrgPluginHooks: true` (calls `beforeAddMember`, which may refuse, and `afterAddMember`, and honors a numeric `teams.maximumMembersPerTeam` by skipping a full team) and `organization.respectMembershipLimit: true` (enforces `membershipLimit` exactly as the org plugin does, including its default of 100, with `MEMBERSHIP_LIMIT_REACHED`). If you already handle new members in `onOrgMemberAdded`, check for double work before enabling `runOrgPluginHooks`.
+
+For a database-level guarantee of one membership per user per org, add a unique index on `member(organizationId, userId)`; see the [Prisma example](https://github.com/OctopiAI/better-enrollment/blob/main/examples/prisma/schema.prisma).
 
 ```ts
 await authClient.invite.org.setSeatLimit({ organizationId, seatLimit: 25 });
