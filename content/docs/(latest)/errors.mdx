@@ -25,6 +25,9 @@ Not every error from an invite endpoint is one of the codes below. When your own
 | `INVITE_ALREADY_USED`   | A single-use invite was already redeemed, or a public invite hit its use cap                                                                                    |
 | `EMAIL_ALREADY_INVITED` | A pending invite of the same kind (and, for `org-join`, the same org) already holds that address; resend it                                                     |
 | `USER_ALREADY_EXISTS`   | `app` invite to an address that already has an established account                                                                                              |
+| `RESEND_TOO_SOON`       | `429`: the private invite was sent less than `resendCooldown` seconds ago                                                                                       |
+| `EXPIRES_IN_TOO_LONG`   | `expiresIn` is above `maxExpiresIn`, or too large to be a date                                                                                                  |
+| `MAX_USES_TOO_HIGH`     | A public invite's `maxUses` is above `maxPublicUses`                                                                                                            |
 
 ## Roles and permissions
 

@@ -62,6 +62,12 @@ betterEnrollment({
 
 Both functions run on create and on resend. `inviteId`, `organizationId`, `organizationRole` and `teamId` come straight from the invite row, so one template can word each kind of invite differently (a new organization's first owner versus a team member) without looking the invite up by its token. App and `org-create` invites pass `null` for the organization fields; `teamId` is set only when an `org-join` invite names a team. `organizationName` is the org's name for `org-join` invites and the [preset name](/docs/organizations#preset-organizations) for `org-create` invites that set one, otherwise `null`.
 
+<Callout type="warn" title="Escape what the inviter typed">
+  `name` and `organizationName` are chosen by whoever sent the invite, and they reach a third
+  party's inbox from your domain. Escape them in HTML templates (most template engines do by
+  default), or leave them out, so an inviter cannot slip links or markup into your mail.
+</Callout>
+
 ## Roles
 
 ```ts title="auth.ts"
@@ -77,9 +83,14 @@ betterEnrollment({
 ```ts title="auth.ts"
 betterEnrollment({
   expiresIn: 60 * 60 * 24 * 7, // private invites, in seconds
-  publicExpiresIn: 60 * 60 * 24 * 7 // public invites; null = never
+  publicExpiresIn: 60 * 60 * 24 * 7, // public invites; null = never
+  maxExpiresIn: 60 * 60 * 24 * 365, // cap on an expiresIn sent to create or resend; null = no cap
+  maxPublicUses: 10_000, // cap on a public invite's maxUses; null = no cap
+  resendCooldown: 60 // seconds between two sends of one private invite; 0 = off
 });
 ```
+
+`maxExpiresIn` and `maxPublicUses` bound what callers send; larger values get `EXPIRES_IN_TOO_LONG` or `MAX_USES_TOO_HIGH`. Your own `expiresIn` and `publicExpiresIn` are not capped. A lifetime too large to be a date is always rejected with `EXPIRES_IN_TOO_LONG`. `resendCooldown` stops one private invite from being mailed again and again: a resend within the cooldown of the last send (creation counts) gets `429 RESEND_TOO_SOON`.
 
 ## Security posture
 

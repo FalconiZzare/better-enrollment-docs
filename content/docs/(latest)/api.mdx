@@ -113,7 +113,20 @@ const { deleted } = await auth.api.cleanupExpiredInvites();
 
 ## Rate limits
 
-Built-in limits: `/invite/accept`, `/invite/activate`, and `/invite/redeem` allow 5 requests per 60 seconds; `/invite/get` allows 10.
+Built-in limits, per client: `/invite/accept`, `/invite/activate`, and `/invite/redeem` allow 5 requests per 60 seconds; `/invite/get` and `/invite/check-slug` allow 10; `/invite/create` allows 20 and `/invite/resend` 10, since both send mail. They apply to HTTP requests only: calls through `auth.api` in your server code, such as a bulk import or [`createSystemInvite`](#server-only), are never limited. Change or remove a limit with Better Auth's `rateLimit.customRules`:
+
+```ts title="auth.ts"
+betterAuth({
+  rateLimit: {
+    customRules: {
+      "/invite/create": { window: 60, max: 100 },
+      "/invite/resend": false
+    }
+  }
+});
+```
+
+Resending one private invite is also held to [`resendCooldown`](/docs/options#lifetime-and-usage).
 
 <Callout>
   Better Auth stores rate-limit counters in memory by default. If you run more than one instance,
