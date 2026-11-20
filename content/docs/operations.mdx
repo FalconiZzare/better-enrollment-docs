@@ -16,6 +16,8 @@ const { deleted } = await auth.api.cleanupExpiredInvites();
 
 `disableOrg` with `banMembers` and `deleteOrg` read and delete in pages of 1000, so they stay within driver bind-parameter limits on orgs of any size.
 
+Ending sessions follows your session storage. With sessions in the database, each page is one set-based delete. With `secondaryStorage` (Redis), there is no query by user, so Better Auth's per-user session helper runs for each member, 20 at a time; it also clears the database copy when `storeSessionInDatabase` is on. Nothing in the plugin writes to the `session` table directly when secondary storage is configured, so apps without a session table work.
+
 ## Indexes
 
 The schema ships with single-column indexes on the hot columns, and large invite tables benefit from two composite ones. The [Database page](/docs/database#indexes) lists them and explains the migration caveat.
