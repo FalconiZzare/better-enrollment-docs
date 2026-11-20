@@ -28,6 +28,10 @@ The hooks cost nothing on ordinary logins. Email and password, username, OAuth a
 
 A private invite pre-creates an inert user, which locks the email. The database hooks already stop a reset from completing on that user. The request hook makes sure no reset mail is sent for it in the first place, so outsiders cannot probe the endpoint to learn who has been invited. It returns Better Auth's own generic success response, byte-identical to the unknown-email case.
 
+The hook applies only while the address belongs to a pending invite's shell. An established account resets its password normally, even when it signs in through a social provider only and its address once received an invite that was revoked or expired. Each reset request costs one indexed lookup in invite-only mode.
+
+Every request hook ignores input of the wrong type (an `email` that is a number or an object, say), so the endpoint's own validation answers with a `400` instead of the hook failing with a `500`.
+
 ## The email lock
 
 An address stays locked within one scope while a pending invite row exists for it, even past `expiresAt`; re-inviting the same thing returns `CONFLICT` and [resend](/docs/invites#resending-an-invitation) is the way to revive it. A scope is one `kind` plus, for `org-join`, one organization. Invites in different scopes always coexist: the same person can hold pending invites to several orgs, or to the app and an org, and an org inviter cannot probe for pending invites outside their own org.
