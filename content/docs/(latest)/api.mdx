@@ -24,6 +24,8 @@ authClient.invite.create({ kind?, type?, email?, name?, role?, maxUses?, expires
                            organization? });
 authClient.invite.list({ status?, type?, kind?, email?, organizationId?, cursor?, page?, limit? });
 // -> { invites, total, page, limit, nextCursor }
+authClient.invite.uses({ inviteId, cursor?, limit? });
+// -> { uses, nextCursor }
 authClient.invite.resend({ inviteId, expiresIn? });
 authClient.invite.revoke({ inviteId });
 authClient.invite.delete({ inviteId });
@@ -41,6 +43,8 @@ do {
   cursor = data.nextCursor ?? undefined;
 } while (cursor);
 ```
+
+Each listed invite carries its most recent redemptions in `uses`, read in one query of up to 1000 rows for the whole page. When a busy public invite does not fit, its `usesTruncated` is `true`; `uses` pages through one invite's complete audit trail, newest first, with the same opaque `nextCursor` (default `limit` 50, at most 100). It follows `list`'s visibility rules: a caller who may not list an invite gets `NOT_ALLOWED_TO_MANAGE_INVITES` whether or not it exists.
 
 `resend` rotates the token and expiry on any pending invite, invalidating the previous link and redelivering it; see [Resending an invitation](/docs/invites#resending-an-invitation).
 
