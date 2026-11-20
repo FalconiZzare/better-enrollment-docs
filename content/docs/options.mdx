@@ -151,6 +151,16 @@ betterEnrollment({
 });
 ```
 
+Which roles an inviter may grant ([Granting roles](/docs/permissions#granting-roles)):
+
+```ts title="auth.ts"
+betterEnrollment({
+  grantableRoles: undefined, // { support: ["user", "partner"] }: granted without user:set-role
+  canGrantRole: undefined, // (user, role) => boolean, overrides the ceiling
+  grantableRolesCheck: "warn" // "warn" | "error" | "off": grantable roles must not exceed their holder
+});
+```
+
 ## Links
 
 ```ts title="auth.ts"
@@ -169,6 +179,8 @@ betterEnrollment({
     ac,
     roles, // the same objects given to the org plugin
     canCreateOrgInvites: undefined, // (member, org) => boolean
+    grantableRoles: undefined, // { recruiter: ["member"] }: org roles granted without member:update
+    canGrantOrgRole: undefined, // (member, org, role) => boolean, overrides the org ceiling
     allowOwnerInvites: false,
     defaultOrganizationRole: "member",
     orgCreateRole: "owner",

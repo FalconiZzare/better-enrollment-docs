@@ -36,6 +36,16 @@ Coexisting invites are safe because redemption follows the account's live state 
 
 A withdrawn invite never leaves an account behind. Revoke, delete, expiry cleanup and organization deletion all remove the invite's shell as long as it never redeemed anything, whatever state it reached. A user with a recorded redemption is a real account and is never removed this way.
 
+## Granting roles
+
+An invite that grants a role is a role assignment, so the right to send invites never widens into the right to assign roles. Whoever picks the role, or receives a usable link, must be allowed to assign it:
+
+- The default role (`defaultRole`, or `defaultOrganizationRole` for org-join) is always grantable.
+- Any other app role needs the admin plugin's `user:set-role`, the permission `admin/set-role` itself requires, or a [`grantableRoles`](/docs/permissions#granting-roles) entry. Any other org role needs `member:update` in that organization, or an `organization.grantableRoles` entry.
+- Resending a public invite hands its new link to the resender, so it is checked like creation.
+- Redeeming your own invite requires full authority over each role it grants. `grantableRoles` lets someone grant roles to others, never to themselves.
+
+See [Permissions: granting roles](/docs/permissions#granting-roles).
 
 ## No account oracles
 

@@ -99,13 +99,15 @@ await authClient.invite.org.delete({ organizationId });
 
 ## Who can do what
 
-| Action                             | App admin           | Org owner or admin | Member with `invitation:create` | Plain member |
-| ---------------------------------- | ------------------- | ------------------ | ------------------------------- | ------------ |
-| Create `app` / `org-create` invite | Yes                 | No                 | No                              | No           |
-| Create `org-join` invite           | **No**              | Yes                | Yes                             | No           |
-| List invites                       | All                 | Own org            | Own org                         | No           |
-| Revoke or delete                   | Moderation backstop | Own org            | Own org (`invitation:cancel`)   | No           |
-| Seat limits, disable, delete org   | Yes                 | No                 | No                              | No           |
+| Action                             | App admin                            | Org owner or admin | Member with `invitation:create`               | Plain member |
+| ---------------------------------- | ------------------------------------ | ------------------ | --------------------------------------------- | ------------ |
+| Create `app` / `org-create` invite | Yes                                  | No                 | No                                            | No           |
+| Create `org-join` invite           | **No**                               | Yes                | Yes                                           | No           |
+| Grant a non-default org role       | **No**                               | Yes                | Only with `member:update` or `grantableRoles` | No           |
+| Resend a public non-default link   | Only as a member allowed to grant it | Yes                | Only if allowed to grant it                   | No           |
+| List invites                       | All                                  | Own org            | Own org                                       | No           |
+| Revoke or delete                   | Moderation backstop                  | Own org            | Own org (`invitation:cancel`)                 | No           |
+| Seat limits, disable, delete org   | Yes                                  | No                 | No                                            | No           |
 
 App admins come from the admin plugin's AC file (`ac` and `roles` passed to the plugin) or, without one, from `adminRoles` (default `["admin"]`), `adminUserIds`, or your own `canManageInvites(user)` callback; see [Permissions](/docs/permissions). Org permissions are the org plugin's own access control. Cross-org calls return `FORBIDDEN`, and unknown org ids look identical so they cannot be enumerated.
 
