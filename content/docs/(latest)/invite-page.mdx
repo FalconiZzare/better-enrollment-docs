@@ -97,6 +97,21 @@ await authClient.signIn.email({ email, password });
 
 In the `CONFIRM` flow the user was already signed in, and nothing about their session (including the active organization) is changed; switching to a newly joined org is your call.
 
+### Organization name and slug [!new]
+
+When the founder names their organization (`org-create` without a [preset](/docs/organizations#preset-organizations)), the name must be 1 to 200 characters with no line breaks or control characters, and the slug lowercase letters, numbers and single dashes, up to 48 characters. Case and surrounding spaces are normalized first, so `" Acme-Corp "` is accepted as `acme-corp`. Anything else fails with `422 INVALID_ORG_NAME` or `INVALID_ORG_SLUG`, and the invite is not used up.
+
+The client plugin checks the same rules before sending, so `invite.redeem`, `invite.checkSlug` and `invite.create` answer a malformed value immediately, with the same error the server would return and no network request. The server enforces the rules either way. For live feedback while the founder types, the rules are exported too:
+
+```ts
+import { isValidOrgSlug, slugify } from "@octopi-ai/better-enrollment/client";
+
+const suggested = slugify(organizationName); // "Acme Corp" -> "acme-corp"
+const slugOk = isValidOrgSlug(organizationSlug);
+```
+
+`invite.checkSlug({ query: { token, slug } })` then confirms the slug is still free. Organizations created through the organization plugin's own `/organization/create` are not covered; to apply the same rule there, call `isValidOrgSlug` from its `organizationHooks.beforeCreateOrganization`.
+
 <Callout title="A deliberately thin payload">
   `invite.get` returns only kind, role, derived status, expiry, uses remaining, and a masked email
   such as `a***@example.com`. Never the inviter's identity or internal ids.

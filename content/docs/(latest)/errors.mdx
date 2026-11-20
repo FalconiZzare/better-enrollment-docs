@@ -63,6 +63,8 @@ Not every error from an invite endpoint is one of the codes below. When your own
 | `ORG_INVITE_NOT_ALLOWED`   | Not permitted to invite into that organization; with the organization plugin, also any invite id the caller may not manage, whether or not it exists |
 | `ORG_DISABLED`             | The organization is disabled: create, redeem, and org members managing its invites or usage                                                          |
 | `ORG_SLUG_TAKEN`           | Slug collision while founding an organization the founder names (preset slugs get a suffix)                                                          |
+| `INVALID_ORG_SLUG`         | The slug is not lowercase letters, numbers and single dashes within 48 characters; also answered by the client plugin without a request              |
+| `INVALID_ORG_NAME`         | The organization name is empty, over 200 characters, or contains line breaks or control characters; also answered by the client plugin               |
 
 ## Listing [!new]
 
