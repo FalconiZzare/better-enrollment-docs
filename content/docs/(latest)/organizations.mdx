@@ -29,7 +29,7 @@ plugins: [
 ],
 ```
 
-Redeeming an org invite writes the member row (and team membership when `teamId` is set) in the same flow that creates the account. Redemption re-validates everything, since state drifts between create and accept.
+Redeeming an org invite writes the member row (and team membership when `teamId` is set) in the same flow that creates the account. Redemption re-validates everything, since state drifts between create and accept. When the org is full or a hook refuses, the redemption fails as a whole: the invitee gets no account access out of it and can redeem the same link once a seat frees up.
 
 <Callout type="info" title="Active organization is a product decision">
   After an `org-join` or `org-create` invite is redeemed, the plugin does not select an active
