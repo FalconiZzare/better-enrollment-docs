@@ -74,9 +74,12 @@ Both functions run on create and on resend. `inviteId`, `organizationId`, `organ
 betterEnrollment({
   validRoles: ["user", "admin"], // omit to skip validation
   fallbackRole: undefined, // used when an invited role was deleted
-  defaultRole: "user"
+  defaultRole: "user",
+  publicInviteRoles: ["user"] // roles a public link may grant; omit for any role
 });
 ```
+
+A public link reaches whoever holds it, so `publicInviteRoles` keeps public invites to low roles. It is checked at create and resend (`422 ROLE_NOT_ALLOWED_FOR_PUBLIC_INVITE`) and again at redemption (`403`), so narrowing the list also stops links issued before. `organization.publicInviteRoles` does the same for the org role of public `org-join` invites. Private invites are not affected. The next major version will default it to `[defaultRole]`.
 
 ## Lifetime and usage
 
@@ -101,6 +104,8 @@ betterEnrollment({
   exposeEmailOnGet: false
 });
 ```
+
+`hashTokens: false` stores live links in your database and is deprecated: the plugin warns at startup, and the next major version removes it.
 
 `autoVerifyPublicInviteEmail` and its trade-offs are covered in [Verifying public-invite emails](/docs/invites#verifying-public-invite-emails). By default `invite.get` returns a masked email such as `a***@example.com`; see [The invite page](/docs/invite-page).
 
@@ -176,9 +181,14 @@ betterEnrollment({
 
 ```ts title="auth.ts"
 betterEnrollment({
-  buildInviteUrl: ({ token, type, mode }) => `https://app.example.com/invite?token=${token}`
+  linkStyle: "fragment", // "/invite#token=..." instead of "/invite?token=..."
+  buildInviteUrl: ({ token, type, mode }) => `https://app.example.com/invite#token=${token}`
 });
 ```
+
+Without `buildInviteUrl`, links are built from Better Auth's `baseURL` (or `BETTER_AUTH_URL`). With neither set, the link's host comes from each request, so a forged `Host` header would get a mailed link to that host; the plugin warns at startup in that case, and the next major version will require one of them.
+
+`linkStyle: "fragment"` puts the token after `#`. Browsers never send the fragment to a server, so the token stays out of access logs, proxies and `Referer` headers. Your page reads it from `location.hash` and looks the invite up with [`invite.lookup`](/docs/invite-page#keeping-the-token-out-of-urls), the POST twin of `invite.get`. `buildInviteUrl` overrides `linkStyle`.
 
 ## Organizations [!updated]
 

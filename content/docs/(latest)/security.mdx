@@ -61,6 +61,15 @@ One place still answers differently for known and unknown addresses: a signed-ou
 
 The `SIGN_IN_REQUIRED` answer also covers activation invites called through `/invite/accept` directly: an invite issued to an already-established account can only merge inside that account's own session, never set its password from the token. The invite token proves mailbox control; changing or joining an existing account requires proof of account control, which is a session.
 
+## Hardening options
+
+- **Public roles:** `publicInviteRoles` and `organization.publicInviteRoles` cap what a public link can grant; see [Roles](/docs/options#roles).
+- **Tokens out of URLs:** `linkStyle: "fragment"` with `invite.lookup`; see [Links](/docs/options#links).
+- **Link host:** set `baseURL` or `buildInviteUrl`; the plugin warns at startup when links would follow the request's host.
+- **One pending invite per scope, even under parallel requests:** a create that pre-creates no user counts the scope after writing and backs out when another create got in first.
+- **Activation reads the database:** ban, email and verification checks use the user row, not a cookie cache that may be minutes old.
+- **Org deletion** also removes the org's custom roles, on databases that do not cascade deletes.
+
 ## Tokens
 
 Tokens are `generateRandomString(32)` from Better Auth's crypto module, roughly 190 bits of entropy, stored as SHA-256 base64url and looked up by hash. A database leak exposes no usable links.

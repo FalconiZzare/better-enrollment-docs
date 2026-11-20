@@ -68,6 +68,18 @@ Invitees are normal users, so live invites return `"SIGN_IN"` (no session; show 
 
 </Tabs>
 
+### Keeping the token out of URLs [!new]
+
+With [`linkStyle: "fragment"`](/docs/options#links) the link carries the token after `#`, which never reaches a server. Read it on the page and use the POST lookups, so the token never appears in a URL your servers or proxies log:
+
+```ts
+const token = new URLSearchParams(location.hash.slice(1)).get("token");
+const { data: invite } = await authClient.invite.lookup({ token }); // same as invite.get
+await authClient.invite.verifySlug({ token, slug }); // same as invite.checkSlug
+```
+
+`invite.get` and `invite.checkSlug` keep working with the token in the query.
+
 ## Redeeming
 
 Submit everything to one endpoint:
