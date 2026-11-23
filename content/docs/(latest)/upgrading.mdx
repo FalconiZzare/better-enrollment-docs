@@ -32,6 +32,8 @@ Startup now fails, instead of warning, in two cases:
 
 If you use access-control roles, `org-create` invites now need `invite: ["manage-orgs"]` (also in 0.8.1): add it to any role that creates them with `create` alone.
 
+If your organization plugin sets a custom `creatorRole` (also in 0.8.1): founders of invite-founded organizations now get it unless `organization.orgCreateRole` says otherwise, `allowOwnerInvites` governs it, and a role merely named `owner` is an ordinary role. Set `orgCreateRole: "owner"` to keep the old founder role. See the [0.8.1 changelog](/changelog#v0.8.1).
+
 Remove options that no longer exist:
 
 - `hashTokens`: tokens are always stored hashed.
