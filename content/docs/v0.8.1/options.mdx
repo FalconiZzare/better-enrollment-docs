@@ -202,9 +202,9 @@ betterEnrollment({
     canCreateOrgInvites: undefined, // (member, org) => boolean
     grantableRoles: undefined, // { recruiter: ["member"] }: org roles granted without member:update
     canGrantOrgRole: undefined, // (member, org, role) => boolean, overrides the org ceiling
-    allowOwnerInvites: false,
+    allowOwnerInvites: false, // invites granting the org plugin's creatorRole, from members holding it
     defaultOrganizationRole: "member",
-    orgCreateRole: "owner",
+    orgCreateRole: undefined, // the founder's org role; defaults to the org plugin's creatorRole
     defaultSeatLimit: undefined,
     resolveSeatLimit: undefined, // async (org) => number | null
     enforceSeatLimitOnOrgPlugin: true, // seat limit on the org plugin's invite-member / accept-invitation
