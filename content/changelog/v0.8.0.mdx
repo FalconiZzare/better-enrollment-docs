@@ -1,0 +1,66 @@
+---
+title: Security release
+description: Fixes from an internal security review, two of them rated high. Upgrade, then follow the two advisories' after-upgrade checks. New options let delegated inviters grant specific roles and keep invite tokens out of URLs.
+version: 0.8.0
+date: "2026-11-23"
+---
+
+### Security
+
+Upgrade to 0.8.0. Details are in the advisories; each one lists what to check after upgrading.
+
+- **High**: [GHSA-9g55-9cm8-94f3](https://github.com/OctopiAI/better-enrollment/security/advisories/GHSA-9g55-9cm8-94f3). Accounts created for pending invites could be used before the invite was redeemed. An invited account now holds only your default role until redemption, and cannot sign in, gain a login method or verify its email outside the invite flow. Revoking or deleting an invite that was never redeemed removes its account. See [What is blocked in invite-only mode](/docs/security#what-is-blocked-in-invite-only-mode).
+- **High**: [GHSA-4ghc-pq92-29f6](https://github.com/OctopiAI/better-enrollment/security/advisories/GHSA-4ghc-pq92-29f6). Invites could grant roles their creator was not allowed to assign. Creating an invite, resending a public link and redeeming your own invite now require the right to assign every app and organization role the invite carries. See [Granting roles](/docs/permissions#granting-roles).
+- **Medium**: banning an organization's members ends their sessions in every session storage, secondary storage included, and deleting an organization clears it as the active organization everywhere.
+- **Medium**: invites are withdrawn when their inviter is banned or deleted through any path, or loses the organization role that allowed the invite; redemption checks the inviter as a backstop. See [When invites are withdrawn automatically](/docs/organizations#when-invites-are-withdrawn-automatically).
+- **Medium**: seat limits hold under parallel requests and on the organization plugin's own invitation endpoints.
+- **Low**: a disabled organization stays closed to every request that names it, whichever way the request names it.
+- **Low**: `banMembers` never bans platform staff; `enableOrg({ unbanMembers: true })` lifts the bans it set.
+- **Low**: a redemption that fails part way leaves nothing behind, so a retry starts clean.
+- **Low**: invite creation and resends are rate limited and their lifetimes and use counts are capped (see below).
+- **Low**: bulk reads no longer stop at 100 rows; withdrawals, handovers and org operations cover every row.
+- **Low**: management endpoints check the caller's rights before they say anything about an invite. See [What callers can learn](/docs/security#what-callers-can-learn).
+- **Low**: organization names and slugs are validated on the server, and by the client before a request is sent.
+- **Hardening**: public links can be limited to low roles, tokens can stay out of URLs, activation reads the user from the database, and organization deletion removes the organization's custom roles. See [Hardening options](/docs/security#hardening-options).
+
+### May affect you
+
+Each of these is on by default and has an opt-out.
+
+- **Resend cooldown**: one private invite can be sent again only after `resendCooldown` seconds (default 60, `0` turns it off). Earlier resends get `429 RESEND_TOO_SOON`.
+- **Rate limits**: `/invite/create` allows 20 requests a minute and `/invite/resend` 10. Change them with Better Auth's `rateLimit.customRules`. See [Rate limits](/docs/api#rate-limits).
+- **Caps**: an `expiresIn` sent to create or resend is capped by `maxExpiresIn` (default one year, `EXPIRES_IN_TOO_LONG`), and a public invite's `maxUses` by `maxPublicUses` (default 10000, `MAX_USES_TOO_HIGH`). `null` removes a cap.
+- **Organization names and slugs**: slugs must be lowercase letters, digits and single dashes, up to 48 characters; names up to 200 characters without control characters. Others get `422 INVALID_ORG_SLUG` or `INVALID_ORG_NAME`.
+- **Seat limits on the organization plugin**: its invite and accept endpoints now respect seat limits. Turn this off with `organization.enforceSeatLimitOnOrgPlugin: false`.
+- **Refusals**: resend, revoke and delete answer a caller without rights the same way whether or not the invite exists or is still pending. If your UI branches on those codes, check it against [Errors](/docs/errors).
+- **Lists**: organization inviters no longer see internal user ids on invite list rows, and each row's `uses` are newest first.
+- **Ban reason**: bans set by `banMembers` now read `Organization suspended by administrator (org:<id>)`. Update any code that matches the old text.
+- **Invites to a deleted account** are cancelled when the account is deleted, through any path.
+- **Password reset** for an existing account with an old unaccepted invite now works; only invited accounts that were never redeemed are blocked.
+- **Delegated inviters**: if users who are not full administrators create invites with roles other than the default, list those roles in `grantableRoles` or `organization.grantableRoles`, or those invites are refused with `ROLE_NOT_GRANTABLE` or `ORG_ROLE_NOT_GRANTABLE`. A startup check (`grantableRolesCheck`) warns when a grantable role can do more than its holder.
+- **Better Auth**: the peer range is now `better-auth >= 1.6.20`.
+
+### Features
+
+- **Roles**: `grantableRoles`, `canGrantRole`, `organization.grantableRoles` and `organization.canGrantOrgRole` let delegated inviters grant chosen roles. See [Granting roles](/docs/permissions#granting-roles).
+- **Public links**: `publicInviteRoles` and `organization.publicInviteRoles` limit the roles a public invite may grant (`ROLE_NOT_ALLOWED_FOR_PUBLIC_INVITE`). See [Roles](/docs/options#roles).
+- **Links**: `linkStyle: "fragment"` puts the token after `#`, and `invite.lookup` and `invite.verifySlug` take it in a POST body, so it stays out of logs and `Referer` headers. See [Keeping the token out of URLs](/docs/invite-page#keeping-the-token-out-of-urls).
+- **Audit trail**: `invite.uses` pages through one invite's full redemption history; list rows gain `usesTruncated`.
+- **Organizations**: `enableOrg({ unbanMembers })`; `skippedMembers` and `unbannedMembers` in responses and hooks; opt-in `organization.runOrgPluginHooks` and `organization.respectMembershipLimit`.
+- **Hooks and checks**: `onInvitesCancelled` reports automatic withdrawals with a reason; `revalidateInviterOnRedeem` re-checks the inviter's rights at redemption (off by default).
+- **Client**: the org name and slug checks are exported (`isValidOrgSlug`, `isValidOrgName`, `normalizeOrgSlug`, `slugify`) and run before requests are sent.
+- **Startup warnings**: the plugin warns when invite links would follow the request's host (set `baseURL` or `buildInviteUrl`), when public invites run without email verification, and when `hashTokens` is off.
+
+### Fixes
+
+- **Better Auth 1.7.2x**: requests could hang on SQLite when a plugin database hook ran inside a Better Auth transaction.
+- **Password reset and magic link**: a malformed email gets `400` instead of `500`.
+
+### Deprecations
+
+- `passwordlessVerifyPaths` is ignored; invited accounts are refused a session on every path until redemption. Remove it when convenient.
+- `hashTokens: false` is deprecated and warns at startup. It will be removed in 1.0.0, after which tokens are always stored hashed.
+
+### Migration notes
+
+No schema changes. New error codes: `ROLE_NOT_GRANTABLE`, `ORG_ROLE_NOT_GRANTABLE`, `CANNOT_REDEEM_OWN_INVITE`, `ROLE_NOT_ALLOWED_FOR_PUBLIC_INVITE`, `MEMBERSHIP_LIMIT_REACHED`, `RESEND_TOO_SOON`, `EXPIRES_IN_TOO_LONG`, `MAX_USES_TOO_HIGH`, `INVALID_ORG_SLUG` and `INVALID_ORG_NAME`. Upgrade Better Auth to 1.6.20 or later first. After upgrading, run the checks in both advisories.
