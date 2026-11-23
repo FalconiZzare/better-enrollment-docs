@@ -111,7 +111,7 @@ await authClient.invite.org.enable({ organizationId });
 await authClient.invite.org.delete({ organizationId });
 ```
 
-Every organization plugin request that names a disabled org, by id, slug or invitation (in the body or the query, even alongside another org's id), or that acts on a disabled active organization, returns `ORG_DISABLED`. That covers auth routes only. A session keeps its `activeOrganizationId` while the org is disabled, so your own routes that serve organization data must check `disabledAt` themselves:
+Every organization plugin request that names a disabled org, by id, slug, invitation or team (in the body or the query, even alongside another org's id), or that acts on a disabled active organization, returns `ORG_DISABLED`. That covers auth routes only. A session keeps its `activeOrganizationId` while the org is disabled, so your own routes that serve organization data must check `disabledAt` themselves:
 
 ```ts title="middleware.ts"
 const org = await db.organization.findUnique({ where: { id: session.activeOrganizationId } });
@@ -122,7 +122,7 @@ if (org?.disabledAt) return new Response("Organization disabled", { status: 403 
 
 | Action                             | App admin                            | Org owner or admin | Member with `invitation:create`               | Plain member |
 | ---------------------------------- | ------------------------------------ | ------------------ | --------------------------------------------- | ------------ |
-| Create `app` / `org-create` invite | Yes                                  | No                 | No                                            | No           |
+| Create `app` / `org-create` invite | Yes (`org-create`: with `manage-orgs`) | No                 | No                                            | No           |
 | Create `org-join` invite           | **No**                               | Yes                | Yes                                           | No           |
 | Grant a non-default org role       | **No**                               | Yes                | Only with `member:update` or `grantableRoles` | No           |
 | Resend a public non-default link   | Only as a member allowed to grant it | Yes                | Only if allowed to grant it                   | No           |
@@ -144,7 +144,7 @@ An invite never outlives its inviter's standing. Pending invites are cancelled, 
 | The inviter's account is deleted (admin `remove-user`, self-delete)            | All of the inviter's pending invites, deleted                                    | `inviter-deleted`                               |
 | The account an invite is addressed to is deleted                               | Pending private invites to that address, so they cannot recreate it              | `invitee-deleted`                               |
 | The inviter is removed from the org, or leaves it                              | The inviter's pending `org-join` invites for that org                            | `inviter-removed-from-org` / `inviter-left-org` |
-| The inviter's org role changes                                                 | Only those the new role may no longer create or grant                            | `inviter-role-changed`                          |
+| The inviter's org role changes                                                 | Only those the new role may no longer create or grant, owner invites included    | `inviter-role-changed`                          |
 
 Bans and deletions are caught by database hooks, whatever endpoint made the change. The org plugin writes membership rows directly, so membership changes are caught on its `remove-member`, `leave` and `update-member-role` endpoints. As a backstop, redemption and `invite.get` withdraw an invite whose creator no longer exists or is banned (`inviter-inactive`), so a change made outside those paths still cannot be used. With `revalidateInviterOnRedeem: true` the backstop also re-checks the creator's current rights; leave it off if `createSystemInvite` attributes invites to users who are not members of the target org.
 
