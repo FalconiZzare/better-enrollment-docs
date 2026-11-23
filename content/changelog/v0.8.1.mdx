@@ -1,0 +1,21 @@
+---
+title: Security fixes
+description: Owner-level organization roles, permission to found organizations, and disabled organizations. Upgrade; access-control roles that create org-create invites may need manage-orgs.
+version: 0.8.1
+date: "2026-11-23"
+---
+
+### Security
+
+- **Medium**: a customised organization plugin `creatorRole` is now held to the same rule as `owner`: an invite grants it only with `allowOwnerInvites` and from a member who holds such a role.
+- **Low**: an inviter who no longer holds an owner-level role cannot complete its earlier owner invites; they are withdrawn when its role changes, and re-checked at redemption with `revalidateInviterOnRedeem`.
+- **Low**: `org-create` invites found an organization, so creating one, resending one as a public link and redeeming your own now need `invite: ["manage-orgs"]`. See [The invite actions](/docs/permissions#the-invite-actions).
+- **Low**: a disabled organization stays closed when a request names it through an invitation id or a team.
+
+### May affect you
+
+- **Founding organizations**: access-control roles that create `org-create` invites with `invite: ["create"]` alone need `manage-orgs` added. Apps that gate invites with `adminRoles`, `adminUserIds` or `canManageInvites` are not affected.
+
+### Migration notes
+
+No schema changes and no new options.

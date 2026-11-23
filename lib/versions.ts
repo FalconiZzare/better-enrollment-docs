@@ -14,7 +14,7 @@
  * out of the sitemap, llms.txt and search engines, and show a banner.
  */
 export const DOC_VERSIONS = [
-  { label: "v0.8.0", title: "Latest Version", slug: null, tag: "latest" },
+  { label: "v0.8.1", title: "Latest Version", slug: null, tag: "latest" },
   { label: "v0.7.0", title: "Version 0.7", slug: "v0.7.0", tag: "v0.7.0" }
 ] as const;
 
