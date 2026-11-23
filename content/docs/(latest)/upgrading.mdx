@@ -30,6 +30,8 @@ Startup now fails, instead of warning, in two cases:
 - **No link host.** Set Better Auth's `baseURL` (or `BETTER_AUTH_URL`), or the plugin's `buildInviteUrl`. Apps that resolve the base URL per request (`allowedHosts`) set `buildInviteUrl`.
 - **A grantable role that can do more than its holder**, or one the check cannot verify. Fix the `grantableRoles` entry, or set `grantableRolesCheck: "warn"`. See [Granting roles](/docs/permissions#granting-roles).
 
+If you use access-control roles, `org-create` invites now need `invite: ["manage-orgs"]` (also in 0.8.1): add it to any role that creates them with `create` alone.
+
 Remove options that no longer exist:
 
 - `hashTokens`: tokens are always stored hashed.

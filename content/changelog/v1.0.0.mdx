@@ -10,8 +10,8 @@ date: "2026-11-23"
 Each change is covered, with what to do, in [Upgrading to 1.0](/docs/upgrading).
 
 - **No account before redemption**: a private invite no longer creates a user. Redemption creates it with the invited role. `user.validateUserInfo` and `user.create.before` hooks run at redemption instead of creation. Users pre-created by 0.x invites keep their guards.
-- **Other sign-up paths refused**: in invite-only mode, accounts are created only by redemption, the admin plugin's `createUser` and your own server code. Sign-up through other plugins answers `SIGN_UP_REQUIRES_INVITATION`; with `allowOpenSignup`, only addresses holding a pending private invite are refused.
-- **Public redemption**: an unauthenticated public sign-up always answers `{ action: "CHECK_EMAIL" }`, for new and existing addresses alike, and never registers an address that holds a pending private invite. `invite.get` no longer returns `useCount` or `usesRemaining`.
+- **Other sign-up paths refused**: in invite-only mode, accounts are created only by redemption, the admin plugin's `createUser` and your own server code. Sign-up through other plugins answers `SIGN_UP_REQUIRES_INVITATION`; with `allowOpenSignup`, only addresses holding a pending private invite are refused, with Better Auth's existing-account answer.
+- **Public redemption**: an unauthenticated public sign-up answers `{ action: "CHECK_EMAIL" }` for new and existing addresses alike, and never registers an address that holds a live private invite. A full organization refuses both alike. `invite.get` no longer returns `useCount` or `usesRemaining`.
 - **Link host required**: startup fails without Better Auth's `baseURL` (or `BETTER_AUTH_URL`) or `buildInviteUrl`.
 - **Fragment links**: `linkStyle` defaults to `"fragment"`, so new links are `/invite#token=...`. Links already sent keep working.
 - **Public roles**: `publicInviteRoles` defaults to `[defaultRole]` and `organization.publicInviteRoles` to `[defaultOrganizationRole]`. `null` allows any role.
@@ -21,9 +21,11 @@ Each change is covered, with what to do, in [Upgrading to 1.0](/docs/upgrading).
 - **Removed options**: `hashTokens` (tokens are always stored hashed) and `passwordlessVerifyPaths`.
 - **Error codes**: `PRE_CREATED_USER_MISSING` is replaced by `REDEMPTION_IN_PROGRESS` (`409`).
 
+  1.0 also includes every fix from [0.8.1](/changelog#v0.8.1).
+
 ### Features
 
-- **`sendExistingAccountNotice`**: mails the link to an existing account whose email was used to redeem a public invite. See [Delivery](/docs/options#delivery).
+- **`sendExistingAccountNotice`**: mails the link to an existing account whose email was used to redeem a public invite, at most once per invite and address per `existingAccountNoticeCooldown` (default one day). See [Delivery](/docs/options#delivery).
 - **`onInviteExpired` once**: fires once per expiry, recorded in the new `expiryNotifiedAt` column; a resend that revives the invite starts a new one.
 - **System invite marker**: invites from `createSystemInvite` are marked `createdBySystem`, so they never depend on the attributed user's org rights.
 
