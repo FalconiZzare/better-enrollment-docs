@@ -9,7 +9,7 @@ status: updated
 
 ### Redemption
 
-The two calls your [invite page](/docs/v0.7.0/invite-page) uses:
+The two calls your [invite page](/docs/v0.8.1/invite-page) uses:
 
 ```ts
 authClient.invite.get({ token });
@@ -24,12 +24,14 @@ authClient.invite.create({ kind?, type?, email?, name?, role?, maxUses?, expires
                            organization? });
 authClient.invite.list({ status?, type?, kind?, email?, organizationId?, cursor?, page?, limit? });
 // -> { invites, total, page, limit, nextCursor }
+authClient.invite.uses({ inviteId, cursor?, limit? });
+// -> { uses, nextCursor }
 authClient.invite.resend({ inviteId, expiresIn? });
 authClient.invite.revoke({ inviteId });
 authClient.invite.delete({ inviteId });
 ```
 
-`organization: { name, slug? }` presets the organization an `org-create` invite founds; see [Preset organizations](/docs/v0.7.0/organizations#preset-organizations).
+`organization: { name, slug? }` presets the organization an `org-create` invite founds; see [Preset organizations](/docs/v0.8.1/organizations#preset-organizations).
 
 `list` returns invites newest first (`createdAt`, then `id`, both descending). For stable paging, pass the response's `nextCursor` back as `cursor` until it comes back `null`; it is opaque, and a malformed one fails with `INVALID_CURSOR`. Keyset paging never skips or repeats a row, even when invites share a timestamp or new ones arrive between pages. `page` still works for offset paging when no cursor is given (a cursor wins when both are sent), and `total` counts every match either way:
 
@@ -42,9 +44,11 @@ do {
 } while (cursor);
 ```
 
-`resend` rotates the token and expiry on any pending invite, invalidating the previous link and redelivering it; see [Resending an invitation](/docs/v0.7.0/invites#resending-an-invitation).
+Each listed invite carries its most recent redemptions in `uses`, read in one query of up to 1000 rows for the whole page. When a busy public invite does not fit, its `usesTruncated` is `true`; `uses` pages through one invite's complete audit trail, newest first, with the same opaque `nextCursor` (default `limit` 50, at most 100). It follows `list`'s visibility rules: a caller who may not list an invite gets the same error whether or not it exists (see [What callers can learn](/docs/v0.8.1/security#what-callers-can-learn)). For org inviters, `list` leaves out `preCreatedUserId`, `createdByUserId` and `revokedByUserId`.
 
-Who may call these is covered in [Who can do what](/docs/v0.7.0/organizations#who-can-do-what).
+`resend` rotates the token and expiry on any pending invite, invalidating the previous link and redelivering it; see [Resending an invitation](/docs/v0.8.1/invites#resending-an-invitation).
+
+Who may call these is covered in [Who can do what](/docs/v0.8.1/organizations#who-can-do-what).
 
 ### Mode-specific primitives
 
@@ -55,7 +59,7 @@ authClient.invite.accept({ token, password, name, email? });
 authClient.invite.activate({ token });
 ```
 
-`accept` requires `name` (it is the flow that populates the profile) and carries the `SIGN_UP`-step [additional fields](/docs/v0.7.0/options#additional-fields); `activate` acts on an existing account, takes no name, and carries the `CONFIRM`-step additional fields.
+`accept` requires `name` (it is the flow that populates the profile) and carries the `SIGN_UP`-step [additional fields](/docs/v0.8.1/options#additional-fields); `activate` acts on an existing account, takes no name, and carries the `CONFIRM`-step additional fields.
 
 ### Organization administration
 
@@ -63,7 +67,7 @@ authClient.invite.activate({ token });
 authClient.invite.org.usage({ organizationId });
 authClient.invite.org.setSeatLimit({ organizationId, seatLimit });
 authClient.invite.org.disable({ organizationId, banMembers? });
-authClient.invite.org.enable({ organizationId });
+authClient.invite.org.enable({ organizationId, unbanMembers? });
 authClient.invite.org.delete({ organizationId, banMembers? });
 ```
 
@@ -113,14 +117,27 @@ const { deleted } = await auth.api.cleanupExpiredInvites();
 
 ## Rate limits
 
-Built-in limits: `/invite/accept`, `/invite/activate`, and `/invite/redeem` allow 5 requests per 60 seconds; `/invite/get` allows 10.
+Built-in limits, per client: `/invite/accept`, `/invite/activate`, and `/invite/redeem` allow 5 requests per 60 seconds; `/invite/get`, `/invite/lookup`, `/invite/check-slug` and `/invite/verify-slug` allow 10; `/invite/create` allows 20 and `/invite/resend` 10, since both send mail. They apply to HTTP requests only: calls through `auth.api` in your server code, such as a bulk import or [`createSystemInvite`](#server-only), are never limited. Change or remove a limit with Better Auth's `rateLimit.customRules`:
+
+```ts title="auth.ts"
+betterAuth({
+  rateLimit: {
+    customRules: {
+      "/invite/create": { window: 60, max: 100 },
+      "/invite/resend": false
+    }
+  }
+});
+```
+
+Resending one private invite is also held to [`resendCooldown`](/docs/v0.8.1/options#lifetime-and-usage).
 
 <Callout>
   Better Auth stores rate-limit counters in memory by default. If you run more than one instance,
   configure Better Auth's `rateLimit.storage` (for example `"secondary-storage"` with Redis) so the
-  limits are shared instead of per-pod. See [Operations at scale](/docs/v0.7.0/operations).
+  limits are shared instead of per-pod. See [Operations at scale](/docs/v0.8.1/operations).
 </Callout>
 
 ## Revoke, delete, and the email lock
 
-In short: `invite.revoke` cancels an invite but keeps its protections active, `invite.delete` also removes the pre-created user and frees the address, and accepted invites are permanent audit records that cannot be deleted. The full semantics of the email lock, and why revoking is deliberately softer than deleting, are on the [Security page](/docs/v0.7.0/security#the-email-lock).
+In short: `invite.revoke` cancels an invite and removes its never-redeemed pre-created user, `invite.delete` also removes the invite row and frees the address, and accepted invites are permanent audit records that cannot be deleted. The full semantics of the email lock are on the [Security page](/docs/v0.8.1/security#the-email-lock).

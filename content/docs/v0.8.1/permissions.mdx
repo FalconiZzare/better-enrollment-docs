@@ -51,7 +51,7 @@ export const admin = ac.newRole({
 
 export const support = ac.newRole({
   user: ["get", "list"],
-  invite: ["create", "list"] // may invite and see invites, nothing else
+  invite: ["create", "list"] // may send app invites (default role only) and see invites
 });
 ```
 
@@ -77,14 +77,14 @@ betterEnrollment({ ac, roles, permissionResource: "enrollment" });
 
 ### The invite actions
 
-| Action        | Gates                                                                 |
-| ------------- | --------------------------------------------------------------------- |
-| `create`      | `invite.create`, and resend/list scoping for org members              |
-| `resend`      | `invite.resend`                                                       |
-| `list`        | `invite.list`, `invite.org.usage`                                     |
-| `cancel`      | `invite.revoke`                                                       |
-| `delete`      | `invite.delete`                                                       |
-| `manage-orgs` | `invite.org.setSeatLimit`, `invite.org.disable` / `enable` / `delete` |
+| Action        | Gates                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`      | `invite.create` (`org-create` also needs `manage-orgs`), and resend/list scoping for org members                                        |
+| `resend`      | `invite.resend`                                                                                                                         |
+| `list`        | `invite.list`, `invite.org.usage`                                                                                                       |
+| `cancel`      | `invite.revoke`                                                                                                                         |
+| `delete`      | `invite.delete`                                                                                                                         |
+| `manage-orgs` | `org-create` invites (create, public resend, redeeming your own), `invite.org.setSeatLimit`, `invite.org.disable` / `enable` / `delete` |
 
 `inviteAdminAc` grants all six; `inviteUserAc` grants none.
 
@@ -131,6 +131,53 @@ A member may create org-join invites when one of their org roles authorizes `inv
 - **Dynamic access control**: custom roles stored in the `organizationRole` table are resolved per org and honored.
 - **Override**: `organization.canCreateOrgInvites(member, org)` replaces the `invitation:create` check for creation.
 
+## Granting roles
+
+Permission to send invites is not permission to choose any role. An invite that grants a role is a role assignment, so it follows the same rules as assigning that role directly.
+
+### App roles
+
+`defaultRole` is always grantable. For any other role (every role in a comma-separated list), the first match wins:
+
+1. `canGrantRole(user, role)` set: your callback decides.
+2. The role is listed for one of the creator's roles in `grantableRoles`.
+3. The creator holds `user:set-role`, read from the admin plugin's own config (its `roles`, `adminUserIds` and `defaultRole`), the same check `admin/set-role` runs. `adminUserIds` on this plugin also counts. Without the admin plugin: a role in your `roles` granting `user:set-role`, or an `adminRoles` role.
+
+```ts title="auth.ts"
+betterEnrollment({
+  ac,
+  roles: { admin, support },
+  grantableRoles: { support: ["user", "partner"] } // support may hand out partner, never admin
+});
+```
+
+A creator without the right gets `ROLE_NOT_GRANTABLE`. With the default setup (`adminRoles: ["admin"]` and the admin plugin's default roles) nothing changes: admins hold `user:set-role` and grant every role.
+
+<Callout type="warn">
+  Only list roles in `grantableRoles` that can do no more than their holder. The holder chooses the
+  invite's address, so it can always invite a second address it controls. A grantable role is
+  effectively available to the holder. `grantableRolesCheck` (default `"warn"`) compares the
+  access-control statements at startup and reports every grantable role with a permission its holder
+  lacks; set it to `"error"` to refuse to start.
+</Callout>
+
+If you gate management with `canManageInvites` and have no admin plugin, there is no permission to read. Set `canGrantRole` or `grantableRoles`; until you do, the plugin keeps the old behavior (any role) and logs a startup warning.
+
+### Organization roles
+
+`defaultOrganizationRole` is always grantable. Any other org role, first match wins:
+
+1. `organization.canGrantOrgRole(member, org, role)` set: your callback decides.
+2. The role is listed for one of the inviter's org roles in `organization.grantableRoles`.
+3. The inviter holds `member: ["update"]` in that organization, the permission the org plugin requires to change a member's role. The org plugin's `creatorRole` (default `owner`) always passes.
+
+The org plugin's `creatorRole` (`owner` unless you change it) keeps its own rule, as in the org plugin: it needs `allowOwnerInvites` and an inviter who holds that role. With a custom `creatorRole`, a role merely named `owner` is an ordinary role. It applies at creation (`OWNER_INVITES_NOT_ALLOWED`), on a public resend (`ORG_ROLE_NOT_GRANTABLE`), when the inviter's org role changes, and when you redeem your own invite. A refused inviter for any other role gets `ORG_ROLE_NOT_GRANTABLE`.
+
+### Resending and redeeming
+
+- **Resend**: resending a public invite returns its new link to the resender, so it is checked exactly like creating it. App admins acting as a moderation backstop cannot resend a public org link with a non-default org role unless they are a member allowed to grant it. Private resends are unaffected: the link only goes to the invitee's mailbox.
+- **Your own invite**: redeeming an invite you created requires full authority over each non-default role it grants: `user:set-role` for the app role, `member:update` for the org role (plus the owner rule above), `invite: ["manage-orgs"]` for an `org-create` invite. `grantableRoles` and the callbacks delegate to others, never to yourself (`CANNOT_REDEEM_OWN_INVITE`).
+
 ## Where to go next
 
 <Cards>
@@ -138,12 +185,12 @@ A member may create org-join invites when one of their org roles authorizes `inv
     icon={<Settings2 />}
     title="Options"
     description="Every option betterEnrollment accepts, with defaults."
-    href="/docs/v0.7.0/options"
+    href="/docs/v0.8.1/options"
   />
   <Card
     icon={<Building2 />}
     title="Organizations"
     description="Org invites, seat limits, and who can do what."
-    href="/docs/v0.7.0/organizations"
+    href="/docs/v0.8.1/organizations"
   />
 </Cards>

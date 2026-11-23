@@ -1,0 +1,91 @@
+---
+title: Security
+description: What is blocked, why, and how tokens are stored.
+icon: ShieldCheck
+---
+
+## What is blocked in invite-only mode
+
+A private invite pre-creates its user, the shell. A shell created on 0.8.0 or later holds only `defaultRole`, and the invited role is written when the invite is redeemed; shells created by earlier versions keep the invited role until then, behind the same guards. While the invite is not accepted, redemption is the shell's only way in. This is enforced on the user row by database hooks, so it holds on every path, including plugins Better Enrollment does not know about:
+
+| Attempt                                                                                                   | Blocked by                                                 | Response                                |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------- |
+| `POST /sign-up/email`                                                                                     | Better Auth `disableSignUp`                                | `EMAIL_PASSWORD_SIGN_UP_DISABLED`       |
+| `POST /sign-in/email`                                                                                     | No credential account exists, and none can be created      | `INVALID_EMAIL_OR_PASSWORD`             |
+| `POST /request-password-reset`                                                                            | Plugin before-hook                                         | Silent success, nothing sent, no oracle |
+| Password reset (core or email OTP) completing on the shell                                                | `account.create.before`: no account of any kind on a shell | `INVITATION_REQUIRED`                   |
+| OAuth sign-up as a new user                                                                               | Provider `disableSignUp`                                   | Redirect with `?error=signup_disabled`  |
+| OAuth or any other account linking to the shell                                                           | `account.create.before`                                    | Account not linked                      |
+| Email verification (`/verify-email`, email OTP verify)                                                    | `user.update` hooks: the verified flag is reverted         | `INVITATION_REQUIRED`                   |
+| `POST /sign-in/magic-link`                                                                                | Plugin before-hook                                         | Silent success, nothing sent, no oracle |
+| Any sign-in that needs no account (magic link, email OTP, auto sign-in after verification, other plugins) | `session.create.before`                                    | `INVITATION_REQUIRED`                   |
+
+After acceptance the user is verified and the shell guards no longer apply, so OAuth linking, [magic-link sign-in](/docs/v0.8.1/magic-link) and email OTP work normally.
+
+The hooks cost nothing on ordinary logins. Email and password, username, OAuth and passkey sign-ins need an account, which a shell can never get, so they skip the check. Sign-ins that need no account, email verifications and new accounts each do one indexed lookup in invite-only mode. Open mode does none.
+
+On Better Auth 1.6, a refused email verification surfaces differently: 1.6 runs database after-hooks once the response is built, so the refusal rejects the request handler (most servers answer `500`) instead of returning `403 INVITATION_REQUIRED`. The outcome is the same on every version: the user stays unverified and gets no session.
+
+## Why the password-reset hook exists
+
+A private invite pre-creates an inert user, which locks the email. The database hooks already stop a reset from completing on that user. The request hook makes sure no reset mail is sent for it in the first place, so outsiders cannot probe the endpoint to learn who has been invited. It returns Better Auth's own generic success response, byte-identical to the unknown-email case.
+
+The hook applies only while the address belongs to a pending invite's shell. An established account resets its password normally, even when it signs in through a social provider only and its address once received an invite that was revoked or expired. Each reset request costs one indexed lookup in invite-only mode.
+
+Every request hook ignores input of the wrong type (an `email` that is a number or an object, say), so the endpoint's own validation answers with a `400` instead of the hook failing with a `500`.
+
+## The email lock
+
+An address stays locked within one scope while a pending invite row exists for it, even past `expiresAt`; re-inviting the same thing returns `CONFLICT` and [resend](/docs/v0.8.1/invites#resending-an-invitation) is the way to revive it. A scope is one `kind` plus, for `org-join`, one organization. Invites in different scopes always coexist: the same person can hold pending invites to several orgs, or to the app and an org, and an org inviter cannot probe for pending invites outside their own org.
+
+Coexisting invites are safe because redemption follows the account's live state rather than which invite pre-created it. An inert shell (unverified, no credentials) is claimed by whichever valid private token for that email is redeemed first, in one sign-up; every other invite to that address then becomes an activation (sign in, confirm, roles merge). Every private token proves control of the same mailbox, so which one arrives first grants nothing extra. `invite.delete` removes a pending or cancelled invite plus its pre-created user, which frees the address; a coexisting invite whose shell was removed this way simply creates the account at redemption. Accepted invites are permanent audit records and cannot be deleted.
+
+A withdrawn invite never leaves an account behind. Revoke, delete, expiry cleanup and organization deletion all remove the invite's shell as long as it never redeemed anything, whatever state it reached. A user with a recorded redemption is a real account and is never removed this way.
+
+## Granting roles
+
+An invite that grants a role is a role assignment, so the right to send invites never widens into the right to assign roles. Whoever picks the role, or receives a usable link, must be allowed to assign it:
+
+- The default role (`defaultRole`, or `defaultOrganizationRole` for org-join) is always grantable.
+- Any other app role needs the admin plugin's `user:set-role`, the permission `admin/set-role` itself requires, or a [`grantableRoles`](/docs/v0.8.1/permissions#granting-roles) entry. Any other org role needs `member:update` in that organization, or an `organization.grantableRoles` entry.
+- Resending a public invite hands its new link to the resender, so it is checked like creation.
+- Redeeming your own invite requires full authority over each role it grants. `grantableRoles` lets someone grant roles to others, never to themselves.
+
+See [Permissions: granting roles](/docs/v0.8.1/permissions#granting-roles).
+
+## What callers can learn
+
+Invite management never reports more than the caller may manage. `resend`, `revoke`, `delete` and `uses` check the caller's rights before anything else, so a caller without them gets one error for every invite id: pending, revoked, accepted or nonexistent. That error is `NOT_ALLOWED_TO_MANAGE_INVITES` in apps without the organization plugin and `ORG_INVITE_NOT_ALLOWED` in apps with it; it depends on your setup, never on the invite. `invite.list` hides other users' internal ids (`preCreatedUserId`, `createdByUserId`, `revokedByUserId`) from org inviters, since a missing pre-created user would tell them the address already had an account; app admins still see them.
+
+**Public invites and email verification.** A public link lets whoever holds it sign up with the address they type, so keep `emailAndPassword.requireEmailVerification: true`: an account created that way is then usable only once its mailbox is verified. In invite-only mode the plugin logs a warning at startup when it is off. Prefer private invites where the address matters. Public redemption gets further hardening in the next major version.
+
+The `SIGN_IN_REQUIRED` answer also covers activation invites called through `/invite/accept` directly: an invite issued to an already-established account can only merge inside that account's own session, never set its password from the token. The invite token proves mailbox control; changing or joining an existing account requires proof of account control, which is a session.
+
+## What your app must still do
+
+The plugin guards its own flows and every invite's pre-created user. These parts stay with your app:
+
+- **Close sign-up paths the plugin cannot see.** Invite-only [mode detection](/docs/v0.8.1/modes) checks email and password and the social providers. Sign-up through other plugins (magic link, email OTP, passkey, phone number, anonymous, generic OAuth) creates brand-new users the plugin never sees: set each plugin's own `disableSignUp`, or gate them with `user.validateUserInfo`. Pre-created users are covered on every path either way; a built-in backstop for new users is planned for the next major version.
+- **Keep `requireEmailVerification: true`** when you issue public invites, so an address registered through a public link cannot be signed into without its mailbox. See [What callers can learn](#what-callers-can-learn).
+- **Set `baseURL` or `buildInviteUrl`,** so invite links never take their host from a request.
+- **Prefer this plugin's invites for seat-limited orgs.** The organization plugin's own `/organization/invite-member` and `/organization/accept-invitation` are checked against the seat limit, but not atomically; under heavy concurrency, invite through Better Enrollment or disable those endpoints. See [Seat limits](/docs/v0.8.1/organizations#seat-limits).
+- **Check `disabledAt` in your own routes.** Disabling an org blocks its invites and organization plugin routes, not your application's data.
+- **Escape inviter-chosen text** (`name`, `organizationName`) in your email templates.
+- **Send full role lists** when you change roles outside invites; the admin plugin's `setRole` overwrites the field. See [the recipe](/docs/v0.8.1/recipes#changing-roles-without-losing-invite-granted-ones).
+
+## Hardening options
+
+- **Public roles:** `publicInviteRoles` and `organization.publicInviteRoles` cap what a public link can grant; see [Roles](/docs/v0.8.1/options#roles).
+- **Tokens out of URLs:** `linkStyle: "fragment"` with `invite.lookup`; see [Links](/docs/v0.8.1/options#links).
+- **Link host:** set `baseURL` or `buildInviteUrl`; the plugin warns at startup when links would follow the request's host.
+- **One pending invite per scope, even under parallel requests:** a create that pre-creates no user counts the scope after writing and backs out when another create got in first.
+- **Activation reads the database:** ban, email and verification checks use the user row, not a cookie cache that may be minutes old.
+- **Org deletion** also removes the org's custom roles, on databases that do not cascade deletes.
+
+## Tokens
+
+Tokens are `generateRandomString(32)` from Better Auth's crypto module, roughly 190 bits of entropy, stored as SHA-256 base64url and looked up by hash. A database leak exposes no usable links.
+
+## Reporting security issues
+
+If you discover a vulnerability, report it privately to [talat@octopi.ai](mailto:talat@octopi.ai) instead of opening a public issue. Include steps to reproduce where possible.

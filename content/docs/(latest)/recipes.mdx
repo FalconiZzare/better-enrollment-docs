@@ -7,7 +7,7 @@ icon: ChefHat
 ## Custom invite link URL
 
 ```ts
-buildInviteUrl: ({ token }) => `${process.env.APP_URL}/invite?token=${encodeURIComponent(token)}`,
+buildInviteUrl: ({ token }) => `${process.env.APP_URL}/invite#token=${encodeURIComponent(token)}`,
 ```
 
 ## Captcha on redemption endpoints
@@ -26,7 +26,7 @@ haveIBeenPwned({
 
 ## Gating invited users with validateUserInfo
 
-On Better Auth 1.7, `user.validateUserInfo` sees every user Better Enrollment creates: the pre-created account behind a private invite (created with `defaultRole`; the invited role is written at redemption), and the account made when someone redeems a public invite. The plugin passes `source.method === "invite"`, so you can apply a rule to invite sign-ups only, or tell them apart from your other sign-up paths:
+On Better Auth 1.7, `user.validateUserInfo` sees every user Better Enrollment creates: the account made when someone redeems a private invite (created with `defaultRole`; the invited role is written right after) or a public one. It runs at redemption, not when the invite is created. The plugin passes `source.method === "invite"`, so you can apply a rule to invite sign-ups only, or tell them apart from your other sign-up paths:
 
 ```ts
 betterAuth({

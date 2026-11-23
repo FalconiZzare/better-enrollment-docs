@@ -156,9 +156,9 @@ A creator without the right gets `ROLE_NOT_GRANTABLE`. With the default setup (`
 <Callout type="warn">
   Only list roles in `grantableRoles` that can do no more than their holder. The holder chooses the
   invite's address, so it can always invite a second address it controls. A grantable role is
-  effectively available to the holder. `grantableRolesCheck` (default `"warn"`) compares the
-  access-control statements at startup and reports every grantable role with a permission its holder
-  lacks; set it to `"error"` to refuse to start.
+  effectively available to the holder. `grantableRolesCheck` (default `"error"`) compares the
+  access-control statements at startup and refuses to start on any grantable role with a permission
+  its holder lacks, or one it cannot verify; set it to `"warn"` to log them instead.
 </Callout>
 
 If you gate management with `canManageInvites` and have no admin plugin, there is no permission to read. Set `canGrantRole` or `grantableRoles`; until you do, the plugin keeps the old behavior (any role) and logs a startup warning.

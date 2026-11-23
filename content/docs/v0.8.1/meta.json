@@ -1,5 +1,7 @@
 {
-  "title": "v0.7.0",
+  "title": "v0.8.1",
+  "description": "Better Enrollment v0.8.1",
+  "root": true,
   "pages": [
     "---Getting Started---",
     "index",
@@ -23,7 +25,5 @@
     "recipes",
     "operations",
     "roadmap"
-  ],
-  "root": true,
-  "description": "Better Enrollment v0.7.0"
+  ]
 }

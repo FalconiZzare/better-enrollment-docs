@@ -44,7 +44,7 @@ Seat limits resolve in order: `resolveSeatLimit(org)` callback, the org's `seatL
 
 The organization plugin's own invitations are held to the same limit: `/organization/invite-member` and `/organization/accept-invitation` return `SEAT_LIMIT_REACHED` when the org is full. These two checks cannot be atomic, since the org plugin does the writing; for strict limits under heavy concurrency, invite through Better Enrollment. Set `organization.enforceSeatLimitOnOrgPlugin: false` to turn them off. The org plugin's server-only `addMember` is trusted server code and never checked. Orgs without a seat limit pay nothing for any of this.
 
-By default a redemption does not run the org plugin's `organizationHooks` or its `membershipLimit`. Opt in with `organization.runOrgPluginHooks: true` (calls `beforeAddMember`, which may refuse, and `afterAddMember`, and honors a numeric `teams.maximumMembersPerTeam` by skipping a full team) and `organization.respectMembershipLimit: true` (enforces `membershipLimit` exactly as the org plugin does, including its default of 100, with `MEMBERSHIP_LIMIT_REACHED`). If you already handle new members in `onOrgMemberAdded`, check for double work before enabling `runOrgPluginHooks`.
+A redemption runs the org plugin's own rules too: `beforeAddMember` (which may refuse) and `afterAddMember`, a numeric `teams.maximumMembersPerTeam` (a full team is skipped, like a deleted one), and `membershipLimit` exactly as the org plugin applies it, including its default of 100 (`MEMBERSHIP_LIMIT_REACHED`). Turn them off with `organization.runOrgPluginHooks: false` and `organization.respectMembershipLimit: false`, for instance if `onOrgMemberAdded` already does what those hooks do.
 
 For a database-level guarantee of one membership per user per org, add a unique index on `member(organizationId, userId)`; see the [Prisma example](https://github.com/OctopiAI/better-enrollment/blob/main/examples/prisma/schema.prisma).
 
@@ -54,7 +54,7 @@ await authClient.invite.org.usage({ organizationId });
 // -> { seatLimit, members, pendingReserved, remaining }
 ```
 
-## Preset organizations [!new]
+## Preset organizations
 
 By default an `org-create` invite lets the founder name their organization on the invite page. When the inviter should decide instead (a platform onboarding a named customer, say), preset it at creation:
 
@@ -132,11 +132,11 @@ if (org?.disabledAt) return new Response("Organization disabled", { status: 403 
 
 App admins come from the admin plugin's AC file (`ac` and `roles` passed to the plugin) or, without one, from `adminRoles` (default `["admin"]`), `adminUserIds`, or your own `canManageInvites(user)` callback; see [Permissions](/docs/permissions). Org permissions are the org plugin's own access control. Cross-org calls return `FORBIDDEN`, and unknown org ids look identical so they cannot be enumerated.
 
-One actor sits outside this table: trusted server code. The server-only [`createSystemInvite`](/docs/api#server-only) endpoint can create any invite kind, including `org-join`, without a session or org membership; seat limits, disabled-org checks, and the `allowOwnerInvites` switch still apply. System invites store a self-declared inviter and, unless the caller passes `inviter.userId`, a null `createdByUserId`, so they remain distinguishable from member-created invites in the audit trail. When your server sends an invite on someone's behalf (for example a parent organization inviting a child organization's first owner), pass their id as `inviter.userId`: the invite is attributed to them and cleaned up with their other pending invites if they are banned or removed. Either way, attribution is only as trustworthy as the code that called the endpoint.
+One actor sits outside this table: trusted server code. The server-only [`createSystemInvite`](/docs/api#server-only) endpoint can create any invite kind, including `org-join`, without a session or org membership; seat limits, disabled-org checks, and the `allowOwnerInvites` switch still apply. System invites store a self-declared inviter and, unless the caller passes `inviter.userId`, a null `createdByUserId`, so they remain distinguishable from member-created invites in the audit trail. When your server sends an invite on someone's behalf (for example a parent organization inviting a child organization's first owner), pass their id as `inviter.userId`: the invite is attributed to them and cleaned up with their other pending invites if they are banned or removed. System invites are marked `createdBySystem`, so they never depend on that user's org rights. Either way, attribution is only as trustworthy as the code that called the endpoint.
 
-## When invites are withdrawn automatically
+## When invites are withdrawn automatically [!updated]
 
-An invite never outlives its inviter's standing. Pending invites are cancelled, and their pre-created users removed, when:
+An invite never outlives its inviter's standing. Pending invites are cancelled (and users pre-created by 0.x invites removed) when:
 
 | Event                                                                          | Invites withdrawn                                                                | `reason`                                        |
 | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ----------------------------------------------- |
@@ -146,7 +146,7 @@ An invite never outlives its inviter's standing. Pending invites are cancelled, 
 | The inviter is removed from the org, or leaves it                              | The inviter's pending `org-join` invites for that org                            | `inviter-removed-from-org` / `inviter-left-org` |
 | The inviter's org role changes                                                 | Only those the new role may no longer create or grant, owner invites included    | `inviter-role-changed`                          |
 
-Bans and deletions are caught by database hooks, whatever endpoint made the change. The org plugin writes membership rows directly, so membership changes are caught on its `remove-member`, `leave` and `update-member-role` endpoints. As a backstop, redemption and `invite.get` withdraw an invite whose creator no longer exists or is banned (`inviter-inactive`), so a change made outside those paths still cannot be used. With `revalidateInviterOnRedeem: true` the backstop also re-checks the creator's current rights; leave it off if `createSystemInvite` attributes invites to users who are not members of the target org.
+Bans and deletions are caught by database hooks, whatever endpoint made the change. The org plugin writes membership rows directly, so membership changes are caught on its `remove-member`, `leave` and `update-member-role` endpoints. As a backstop, redemption and `invite.get` withdraw an invite whose creator no longer exists or is banned (`inviter-inactive`), so a change made outside those paths still cannot be used. The backstop also re-checks the creator's current rights (`revalidateInviterOnRedeem`, on by default), so an inviter who lost them behind the hooks' back cannot be relied on either. Invites from `createSystemInvite` are exempt.
 
 Redeeming a withdrawn invite returns `INVITE_REVOKED`. Each batch is reported to [`onInvitesCancelled`](/docs/options#lifecycle-hooks). None of this costs anything on sign-in or ordinary requests: the hooks query only when a ban, a deletion or a membership change actually happens, and the backstop is one lookup per redemption.
 

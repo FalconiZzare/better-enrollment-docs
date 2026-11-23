@@ -105,7 +105,7 @@ export const inviteFields = [
     name: "preCreatedUserId",
     type: "string",
     description:
-      "Shell user pre-created for a private invite with the default role; claimed by the invitee on accept, removed when the invite is withdrawn",
+      "Set only by invites created before 1.0, which pre-created an unverified user with the default role; claimed on redeem, removed when the invite is withdrawn",
     isOptional: true
   },
   {
@@ -113,6 +113,13 @@ export const inviteFields = [
     type: "string",
     description:
       "User who created the invite. Plain column, no FK: the record outlives the inviter. Indexed",
+    isOptional: true
+  },
+  {
+    name: "createdBySystem",
+    type: "boolean",
+    description:
+      "True for invites from createSystemInvite, whose inviter rights are never re-checked. Null on invites created before 1.0",
     isOptional: true
   },
   {
@@ -152,6 +159,12 @@ export const inviteFields = [
     name: "revokedByUserId",
     type: "string",
     description: "User who revoked the invite",
+    isOptional: true
+  },
+  {
+    name: "expiryNotifiedAt",
+    type: "date",
+    description: "When onInviteExpired fired for this expiry; cleared when a resend revives the invite",
     isOptional: true
   },
   {
@@ -228,7 +241,7 @@ export const organizationFields = [
 
 ## user (extension)
 
-Each configured [additional field](/docs/options#additional-fields) becomes a column on the user table, named after the field and typed by its `type`. Columns are always nullable: pre-created and open-mode users exist before redemption collects a value, so requiredness is enforced by the redeem flow rather than the database.
+Each configured [additional field](/docs/options#additional-fields) becomes a column on the user table, named after the field and typed by its `type`. Columns are always nullable: open-mode users (and users pre-created by 0.x) exist before redemption collects a value, so requiredness is enforced by the redeem flow rather than the database.
 
 ## Indexes
 

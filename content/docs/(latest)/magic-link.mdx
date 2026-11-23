@@ -2,6 +2,7 @@
 title: Magic links
 description: Passwordless invites for magic-link apps, from setup to the invite page.
 icon: WandSparkles
+status: updated
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
@@ -95,11 +96,10 @@ With both `emailAndPassword` and magic link enabled, auto detection keeps the pa
 
 ## Built-in protection
 
-Magic-link verify signs in any existing user, and a private invite pre-creates one, so without a guard the invitee could sign in and skip your invite flow (no name, no [additional fields](/docs/options#additional-fields), no audit row). The plugin ships three guards, active only in invite-only mode:
+An invited address has no account until its invite is redeemed, and in invite-only mode no other path may create one, so a magic link cannot let the invitee skip your invite flow (no name, no [additional fields](/docs/options#additional-fields), no audit row). The plugin adds, in invite-only mode only:
 
-- A hook on `/sign-in/magic-link` silently skips sending for addresses held by a pre-created shell, returning the endpoint's normal success body: no dead link in the inbox, no invite oracle.
-- A hook on `/magic-link/verify` covers links already in flight: it rejects sign-ins for pre-created shells with `INVITATION_REQUIRED`, resolving the link's email without consuming the token and honoring the magic-link plugin's `storeToken` setting.
-- Database hooks on the shell itself refuse to verify it or sign it in from any path, so other passwordless plugins (email OTP, phone, your own) are covered without configuration. See [Security](/docs/security#what-is-blocked-in-invite-only-mode).
+- A hook on `/sign-in/magic-link` that silently skips sending to an invited address without an account, returning the endpoint's normal success body: no dead link in the inbox, no invite oracle.
+- Guards for users pre-created by 0.x invites: a hook on `/magic-link/verify` rejects links already in flight for them with `INVITATION_REQUIRED` (resolving the link's email without consuming the token, honoring the magic-link plugin's `storeToken`), and database hooks refuse to verify them or sign them in from any path. See [Security](/docs/security#users-pre-created-before-10).
 
 Existing accounts are never blocked (activation invites sign in normally), ordinary sign-ins cost zero extra queries, and [mode detection](/docs/modes) counts the magic-link sign-up path, so `mode: "auto"` and the invite-only interlock both see it.
 
@@ -110,8 +110,6 @@ betterEnrollment({
   passwordless: "auto" // true | false | "auto" (default)
 });
 ```
-
-`passwordlessVerifyPaths` is deprecated and ignored: the session guard now covers every path.
 
 ## Where to go next
 

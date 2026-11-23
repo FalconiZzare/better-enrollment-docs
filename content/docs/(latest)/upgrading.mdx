@@ -1,0 +1,95 @@
+---
+title: Upgrading to 1.0
+description: What changes from 0.8, and what to do about each change.
+icon: CircleArrowUp
+status: new
+---
+
+1.0 makes the safe choices the defaults and removes what 0.8 deprecated. Most apps need a migration, a config check and a few lines on the invite page. Invites sent before the upgrade keep working.
+
+## Before you upgrade
+
+- Better Auth 1.6.20 or later, as for 0.8.
+- If you ran with `hashTokens: false`, note your pending invites: their links stop working after the upgrade, and a [resend](/docs/invites#resending-an-invitation) issues a new one.
+
+## 1. Run the migration
+
+Two nullable columns are added to the `invite` table:
+
+| Column             | Type    | Purpose                                                                          |
+| ------------------ | ------- | -------------------------------------------------------------------------------- |
+| `createdBySystem`  | boolean | Marks invites from `createSystemInvite`, whose inviter rights are not re-checked |
+| `expiryNotifiedAt` | date    | Records when `onInviteExpired` fired, so it fires once per expiry                |
+
+Run `migrate` or `generate` with the Better Auth CLI as usual. Prisma users add both fields to the `Invite` model, as in the [Prisma example](https://github.com/OctopiAI/better-enrollment/tree/main/examples/prisma). See [Database](/docs/database).
+
+## 2. Check your configuration
+
+Startup now fails, instead of warning, in two cases:
+
+- **No link host.** Set Better Auth's `baseURL` (or `BETTER_AUTH_URL`), or the plugin's `buildInviteUrl`. Apps that resolve the base URL per request (`allowedHosts`) set `buildInviteUrl`.
+- **A grantable role that can do more than its holder**, or one the check cannot verify. Fix the `grantableRoles` entry, or set `grantableRolesCheck: "warn"`. See [Granting roles](/docs/permissions#granting-roles).
+
+If you use access-control roles, `org-create` invites now need `invite: ["manage-orgs"]` (also in 0.8.1): add it to any role that creates them with `create` alone.
+
+If your organization plugin sets a custom `creatorRole` (also in 0.8.1): founders of invite-founded organizations now get it unless `organization.orgCreateRole` says otherwise, `allowOwnerInvites` governs it, and a role merely named `owner` is an ordinary role. Set `orgCreateRole: "owner"` to keep the old founder role. See the [0.8.1 changelog](/changelog#v0.8.1).
+
+Remove options that no longer exist:
+
+- `hashTokens`: tokens are always stored hashed.
+- `passwordlessVerifyPaths`: ignored since 0.8.
+
+Review these new defaults:
+
+| Option                                | 0.8       | 1.0                         | To keep the 0.8 behavior               |
+| ------------------------------------- | --------- | --------------------------- | -------------------------------------- |
+| `publicInviteRoles`                   | any role  | `[defaultRole]`             | `null`, or the list of roles you allow |
+| `organization.publicInviteRoles`      | any role  | `[defaultOrganizationRole]` | `null`, or the list of roles you allow |
+| `linkStyle`                           | `"query"` | `"fragment"`                | `"query"`                              |
+| `grantableRolesCheck`                 | `"warn"`  | `"error"`                   | `"warn"`                               |
+| `revalidateInviterOnRedeem`           | `false`   | `true`                      | `false`                                |
+| `organization.runOrgPluginHooks`      | `false`   | `true`                      | `false`                                |
+| `organization.respectMembershipLimit` | `false`   | `true`                      | `false`                                |
+
+`publicInviteRoles` is checked at redemption too, so public links already shared for a higher role stop working unless you list that role. `respectMembershipLimit` applies the organization plugin's `membershipLimit`, which is 100 unless you set it.
+
+## 3. Mark attributed system invites
+
+`revalidateInviterOnRedeem` re-checks, at redemption, that an invite's creator still holds the rights it used. Invites from `createSystemInvite` are exempt, but only those created on 1.0 carry the `createdBySystem` marker. If you passed `inviter.userId` to `createSystemInvite` on 0.x, set `createdBySystem = true` on those pending invites, or keep `revalidateInviterOnRedeem: false` until they are redeemed or expire. System invites without `inviter.userId` need nothing.
+
+## 4. Update the invite page
+
+- **Read the token from the fragment.** New links are `/invite#token=...`. Links sent before the upgrade carry `?token=`, so read both, and look the invite up with `invite.lookup`, which takes the token in the body:
+
+  ```ts
+  const token =
+    new URLSearchParams(location.hash.slice(1)).get("token") ??
+    new URLSearchParams(location.search).get("token");
+  const { data: invite } = await authClient.invite.lookup({ token });
+  ```
+
+- **Handle `CHECK_EMAIL`.** A public sign-up now always answers `{ action: "CHECK_EMAIL" }`, for new and existing addresses alike, instead of `ACCEPTED` or `SIGN_IN_REQUIRED`. Tell the invitee to check their inbox. Private sign-ups and signed-in confirmations still answer `ACCEPTED`.
+- **Stop reading use counts from `invite.get`.** `useCount` and `usesRemaining` are gone from it; `maxUses` and the derived `status` remain, and `invite.list` still has the counts.
+
+Add [`sendExistingAccountNotice`](/docs/options#delivery) so that someone who redeems a public link with an existing account's email gets the link to open after signing in. Without it, nothing is sent to them. See [The invite page](/docs/invite-page).
+
+## 5. Check code that relied on pre-created users
+
+A private invite no longer creates a user. The account appears when the invite is redeemed, with the invited role, and `preCreatedUserId` stays null on new invites.
+
+- Code that looked up or attached data to the invited user before redemption should key on the invite (its id or email) and act in `onInviteAccepted`.
+- `user.validateUserInfo` and your `user.create.before` hooks now run at redemption, not when the invite is created. A rejection there surfaces on redeem, and the invite stays pending.
+- Invited people no longer appear in your user list before they redeem.
+
+Users pre-created by 0.x invites are left in place and keep their guards until their invite is redeemed or withdrawn. See [Users pre-created before 1.0](/docs/security#users-pre-created-before-10).
+
+## 6. Sign-up through other plugins
+
+In invite-only mode, a database hook now refuses any account not created by redemption, the admin plugin's `createUser`, or your own server code outside a request. Sign-up through other plugins (email OTP, anonymous, generic OAuth, SSO and others) answers `SIGN_UP_REQUIRES_INVITATION`. If your invite-only app deliberately lets some people sign up another way, set `allowOpenSignup: true`: then only addresses holding a pending private invite are refused. See [What is blocked](/docs/security#what-is-blocked-in-invite-only-mode).
+
+## Error codes
+
+- Removed: `PRE_CREATED_USER_MISSING`.
+- New: `SIGN_UP_REQUIRES_INVITATION` and `REDEMPTION_IN_PROGRESS` (`409`, when two invites for one address are redeemed at the same moment; retry).
+
+The full list is on [Error codes](/docs/errors).

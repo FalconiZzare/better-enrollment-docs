@@ -8,18 +8,21 @@ status: updated
 import { Tab, Tabs, TabsList, TabsTrigger } from "fumadocs-ui/components/tabs";
 import { Building2, Lock, TriangleAlert, UserPlus } from "lucide-react";
 
-Every invitation link points at the same page, carrying only `?token=`. The invitee never needs to know what kind of invite they hold.
+Every invitation link points at the same page, carrying only `#token=`. The invitee never needs to know what kind of invite they hold.
 
 ```ts
-const { data: invite } = await authClient.invite.get({ token });
+const token =
+  new URLSearchParams(location.hash.slice(1)).get("token") ??
+  new URLSearchParams(location.search).get("token"); // links sent by 0.x
+const { data: invite } = await authClient.invite.lookup({ token });
 ```
 
-## Rendering by `nextAction` [!updated]
+## Rendering by `nextAction`
 
 | `invite.nextAction` | Meaning                       | What to render                               |
 | ------------------- | ----------------------------- | -------------------------------------------- |
 | `SIGN_UP`           | Invite-only, no session       | The fields listed in `requiredFields`        |
-| `SIGN_IN`           | Open mode, no session         | Your sign-in form; keep the token in the URL |
+| `SIGN_IN`           | Open mode, no session         | Your sign-in form; keep the token in the link |
 | `CONFIRM`           | Open mode, session present    | A confirm button, plus any fields listed     |
 | `null`              | Expired, revoked, or consumed | A clear terminal message                     |
 
@@ -62,25 +65,24 @@ Most invitees have no account yet, so live invites return `nextAction: "SIGN_UP"
 
 <Tab value="open-signup">
 
-Invitees are normal users, so live invites return `"SIGN_IN"` (no session; show your sign-in form and keep the token in the URL) or `"CONFIRM"` (signed in; show one confirm button). `SIGN_UP` never appears in open mode.
+Invitees are normal users, so live invites return `"SIGN_IN"` (no session; show your sign-in form and keep the token in the link) or `"CONFIRM"` (signed in; show one confirm button). `SIGN_UP` never appears in open mode.
 
 </Tab>
 
 </Tabs>
 
-### Keeping the token out of URLs [!new]
+### Keeping the token out of URLs [!updated]
 
-With [`linkStyle: "fragment"`](/docs/options#links) the link carries the token after `#`, which never reaches a server. Read it on the page and use the POST lookups, so the token never appears in a URL your servers or proxies log:
+Invite links carry the token after `#` by default, which never reaches a server. Read it on the page and use the POST lookups, so the token never appears in a URL your servers or proxies log:
 
 ```ts
-const token = new URLSearchParams(location.hash.slice(1)).get("token");
 const { data: invite } = await authClient.invite.lookup({ token }); // same as invite.get
 await authClient.invite.verifySlug({ token, slug }); // same as invite.checkSlug
 ```
 
-`invite.get` and `invite.checkSlug` keep working with the token in the query.
+`invite.get` and `invite.checkSlug` take the token in the query. Links sent before 1.0, or with [`linkStyle: "query"`](/docs/options#links), carry `?token=`; both lookups accept the same token, so read either place as above.
 
-## Redeeming
+## Redeeming [!updated]
 
 Submit everything to one endpoint:
 
@@ -94,14 +96,17 @@ await authClient.invite.redeem({
   organizationSlug
   // ...plus any configured additional fields, e.g. department
 });
-// -> { action: "ACCEPTED", organization? }
+// private sign-up and CONFIRM: { action: "ACCEPTED", organization? }
+// public sign-up: { action: "CHECK_EMAIL" }
 ```
 
-`redeem` routes to the right semantics for the mode and kind, so your page never branches. The response says what happened, so you can render "You joined Acme" or "Your organization is ready".
+`redeem` routes to the right semantics for the mode and kind, so your page never branches on them. An `ACCEPTED` response says what happened, so you can render "You joined Acme" or "Your organization is ready".
+
+A public sign-up always answers `CHECK_EMAIL`, whether or not the address already has an account, so the endpoint never tells a link holder who is registered. A new address gets its account and Better Auth's verification email; an existing one is mailed the link through [`sendExistingAccountNotice`](/docs/options#delivery), to open after signing in, where it becomes a one-click `CONFIRM`. Tell the invitee to check their inbox.
 
 `name` is required whenever the redemption signs the invitee up (`nextAction: "SIGN_UP"`); a sign-up without a name defeats the profile-populating point of the flow, so it fails with `NAME_REQUIRED`. Sign-in and confirm flows act on an existing account and take no name; a `CONFIRM` redemption still submits any additional fields configured for that step, in the same body.
 
-A redemption that sets a password creates no session (a passwordless private redemption signs the user in and returns `signedIn: true`). After `ACCEPTED` in the sign-up flow, your page already holds the email and password it just collected, so sign the user in with them:
+A redemption that sets a password creates no session (a passwordless private redemption signs the user in and returns `signedIn: true`). After `ACCEPTED` in a private sign-up, your page already holds the email and password it just collected, so sign the user in with them:
 
 ```ts
 await authClient.signIn.email({ email, password });
@@ -109,7 +114,7 @@ await authClient.signIn.email({ email, password });
 
 In the `CONFIRM` flow the user was already signed in, and nothing about their session (including the active organization) is changed; switching to a newly joined org is your call.
 
-### Organization name and slug [!new]
+### Organization name and slug
 
 When the founder names their organization (`org-create` without a [preset](/docs/organizations#preset-organizations)), the name must be 1 to 200 characters with no line breaks or control characters, and the slug lowercase letters, numbers and single dashes, up to 48 characters. Case and surrounding spaces are normalized first, so `" Acme-Corp "` is accepted as `acme-corp`. Anything else fails with `422 INVALID_ORG_NAME` or `INVALID_ORG_SLUG`, and the invite is not used up.
 
@@ -125,8 +130,10 @@ const slugOk = isValidOrgSlug(organizationSlug);
 `invite.checkSlug({ query: { token, slug } })` then confirms the slug is still free. Organizations created through the organization plugin's own `/organization/create` are not covered; to apply the same rule there, call `isValidOrgSlug` from its `organizationHooks.beforeCreateOrganization`.
 
 <Callout title="A deliberately thin payload">
-  `invite.get` returns only kind, role, derived status, expiry, uses remaining, and a masked email
-  such as `a***@example.com`. Never the inviter's identity or internal ids.
+  `invite.get` returns only kind, role, derived status, expiry, `maxUses`, and a masked email such
+  as `a***@example.com`. Never the inviter's identity, internal ids, or use counts: only a new
+  address uses up a public link, so counts would reveal which addresses have accounts.
+  `invite.list` shows them to whoever manages the invite.
 </Callout>
 
 ## Where to go next

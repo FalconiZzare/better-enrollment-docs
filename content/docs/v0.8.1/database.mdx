@@ -104,7 +104,8 @@ export const inviteFields = [
   {
     name: "preCreatedUserId",
     type: "string",
-    description: "Shell user pre-created for a private invite; claimed by the invitee on accept",
+    description:
+      "Shell user pre-created for a private invite with the default role; claimed by the invitee on accept, removed when the invite is withdrawn",
     isOptional: true
   },
   {
@@ -227,7 +228,7 @@ export const organizationFields = [
 
 ## user (extension)
 
-Each configured [additional field](/docs/v0.7.0/options#additional-fields) becomes a column on the user table, named after the field and typed by its `type`. Columns are always nullable: pre-created and open-mode users exist before redemption collects a value, so requiredness is enforced by the redeem flow rather than the database.
+Each configured [additional field](/docs/v0.8.1/options#additional-fields) becomes a column on the user table, named after the field and typed by its `type`. Columns are always nullable: pre-created and open-mode users exist before redemption collects a value, so requiredness is enforced by the redeem flow rather than the database.
 
 ## Indexes
 
