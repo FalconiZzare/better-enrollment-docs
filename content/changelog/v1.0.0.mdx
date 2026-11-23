@@ -11,7 +11,7 @@ Each change is covered, with what to do, in [Upgrading to 1.0](/docs/upgrading).
 
 - **No account before redemption**: a private invite no longer creates a user. Redemption creates it with the invited role. `user.validateUserInfo` and `user.create.before` hooks run at redemption instead of creation. Users pre-created by 0.x invites keep their guards.
 - **Other sign-up paths refused**: in invite-only mode, accounts are created only by redemption, the admin plugin's `createUser` and your own server code. Sign-up through other plugins answers `SIGN_UP_REQUIRES_INVITATION`; with `allowOpenSignup`, only addresses holding a pending private invite are refused.
-- **Public redemption**: an unauthenticated public sign-up always answers `{ action: "CHECK_EMAIL" }`, for new and existing addresses alike. `invite.get` no longer returns `useCount` or `usesRemaining`.
+- **Public redemption**: an unauthenticated public sign-up always answers `{ action: "CHECK_EMAIL" }`, for new and existing addresses alike, and never registers an address that holds a pending private invite. `invite.get` no longer returns `useCount` or `usesRemaining`.
 - **Link host required**: startup fails without Better Auth's `baseURL` (or `BETTER_AUTH_URL`) or `buildInviteUrl`.
 - **Fragment links**: `linkStyle` defaults to `"fragment"`, so new links are `/invite#token=...`. Links already sent keep working.
 - **Public roles**: `publicInviteRoles` defaults to `[defaultRole]` and `organization.publicInviteRoles` to `[defaultOrganizationRole]`. `null` allows any role.

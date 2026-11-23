@@ -9,14 +9,14 @@ status: updated
 
 A private invite creates no account. Redemption creates it, verified and with the invited role, so until then there is no user to sign into, verify, reset or link. Accounts come only from redemption: a database hook refuses every other way of creating a user in invite-only mode, including sign-up paths from plugins Better Enrollment does not know about.
 
-| Attempt                                                                     | Blocked by                                         | Response                                   |
-| --------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------ |
-| `POST /sign-up/email`                                                       | Better Auth `disableSignUp`                        | `EMAIL_PASSWORD_SIGN_UP_DISABLED`          |
-| `POST /sign-in/email`                                                       | No account exists                                  | `INVALID_EMAIL_OR_PASSWORD`                |
-| `POST /request-password-reset`                                              | No account exists                                  | Better Auth's silent success, nothing sent |
+| Attempt                                                                     | Blocked by                                          | Response                                   |
+| --------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------ |
+| `POST /sign-up/email`                                                       | Better Auth `disableSignUp`                         | `EMAIL_PASSWORD_SIGN_UP_DISABLED`          |
+| `POST /sign-in/email`                                                       | No account exists                                   | `INVALID_EMAIL_OR_PASSWORD`                |
+| `POST /request-password-reset`                                              | No account exists                                   | Better Auth's silent success, nothing sent |
 | OAuth sign-up as a new user                                                 | Provider `disableSignUp`, then `user.create.before` | Redirect with `?error=signup_disabled`     |
-| `POST /sign-in/magic-link` for an invited address                           | Plugin before-hook                                 | Silent success, nothing sent, no oracle    |
-| Sign-up through any other plugin (email OTP, anonymous, generic OAuth, SSO) | `user.create.before`                               | `SIGN_UP_REQUIRES_INVITATION`              |
+| `POST /sign-in/magic-link` for an invited address                           | Plugin before-hook                                  | Silent success, nothing sent, no oracle    |
+| Sign-up through any other plugin (email OTP, anonymous, generic OAuth, SSO) | `user.create.before`                                | `SIGN_UP_REQUIRES_INVITATION`              |
 
 Accounts are created only by invite redemption, the admin plugin's `createUser`, and your own server code running outside a request (seed scripts, jobs). The check runs when a user is about to be created, so logins never reach it, and in invite-only mode it needs no query.
 
@@ -59,7 +59,7 @@ See [Permissions: granting roles](/docs/permissions#granting-roles).
 
 Invite management never reports more than the caller may manage. `resend`, `revoke`, `delete` and `uses` check the caller's rights before anything else, so a caller without them gets one error for every invite id: pending, revoked, accepted or nonexistent. That error is `NOT_ALLOWED_TO_MANAGE_INVITES` in apps without the organization plugin and `ORG_INVITE_NOT_ALLOWED` in apps with it; it depends on your setup, never on the invite. `invite.list` hides other users' internal ids (`preCreatedUserId`, `createdByUserId`, `revokedByUserId`) from org inviters; app admins still see them.
 
-**Public redemption answers the same for every address.** A public sign-up always returns `CHECK_EMAIL`: a new address gets its account and the verification email, an existing one is mailed the link through `sendExistingAccountNotice` and uses nothing up. Both paths hash the password, so timing does not tell them apart either, and `invite.get` shows no use counts, which would. Keep `emailAndPassword.requireEmailVerification: true`: an account created through a public link is then usable only once its mailbox is verified, and signing in cannot reveal whether the address was new. In invite-only mode the plugin logs a warning at startup when it is off. With `autoVerifyPublicInviteEmail`, new accounts can sign in at once, which a link holder can notice. Prefer private invites where the address matters.
+**Public redemption answers the same for every address.** A public sign-up always returns `CHECK_EMAIL`: a new address gets its account and the verification email, an existing one is mailed the link through `sendExistingAccountNotice` and uses nothing up. An address holding a pending private invite gets the same answer and nothing is created, so it still enters only through its own invite. Both paths hash the password, so timing does not tell them apart either, and `invite.get` shows no use counts, which would. Keep `emailAndPassword.requireEmailVerification: true`: an account created through a public link is then usable only once its mailbox is verified, and signing in cannot reveal whether the address was new. In invite-only mode the plugin logs a warning at startup when it is off. With `autoVerifyPublicInviteEmail`, new accounts can sign in at once, which a link holder can notice. Prefer private invites where the address matters.
 
 The `SIGN_IN_REQUIRED` answer also covers activation invites called through `/invite/accept` directly: an invite issued to an already-established account can only merge inside that account's own session, never set its password from the token. The invite token proves mailbox control; changing or joining an existing account requires proof of account control, which is a session.
 
