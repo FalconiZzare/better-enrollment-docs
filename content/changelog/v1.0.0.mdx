@@ -1,0 +1,32 @@
+---
+title: "1.0"
+description: Invites create their account at redemption, invite-only mode refuses every other way in, and the safe options are now the defaults. Run the migration and read the upgrade guide before deploying.
+version: 1.0.0
+date: "2026-11-23"
+---
+
+### Breaking changes
+
+Each change is covered, with what to do, in [Upgrading to 1.0](/docs/upgrading).
+
+- **No account before redemption**: a private invite no longer creates a user. Redemption creates it with the invited role. `user.validateUserInfo` and `user.create.before` hooks run at redemption instead of creation. Users pre-created by 0.x invites keep their guards.
+- **Other sign-up paths refused**: in invite-only mode, accounts are created only by redemption, the admin plugin's `createUser` and your own server code. Sign-up through other plugins answers `SIGN_UP_REQUIRES_INVITATION`; with `allowOpenSignup`, only addresses holding a pending private invite are refused.
+- **Public redemption**: an unauthenticated public sign-up always answers `{ action: "CHECK_EMAIL" }`, for new and existing addresses alike. `invite.get` no longer returns `useCount` or `usesRemaining`.
+- **Link host required**: startup fails without Better Auth's `baseURL` (or `BETTER_AUTH_URL`) or `buildInviteUrl`.
+- **Fragment links**: `linkStyle` defaults to `"fragment"`, so new links are `/invite#token=...`. Links already sent keep working.
+- **Public roles**: `publicInviteRoles` defaults to `[defaultRole]` and `organization.publicInviteRoles` to `[defaultOrganizationRole]`. `null` allows any role.
+- **Grantable roles check**: `grantableRolesCheck` defaults to `"error"`.
+- **Inviter rights**: `revalidateInviterOnRedeem` defaults to `true`; invites from `createSystemInvite` are exempt.
+- **Organization plugin rules**: `organization.runOrgPluginHooks` and `organization.respectMembershipLimit` default to `true`.
+- **Removed options**: `hashTokens` (tokens are always stored hashed) and `passwordlessVerifyPaths`.
+- **Error codes**: `PRE_CREATED_USER_MISSING` is replaced by `REDEMPTION_IN_PROGRESS` (`409`).
+
+### Features
+
+- **`sendExistingAccountNotice`**: mails the link to an existing account whose email was used to redeem a public invite. See [Delivery](/docs/options#delivery).
+- **`onInviteExpired` once**: fires once per expiry, recorded in the new `expiryNotifiedAt` column; a resend that revives the invite starts a new one.
+- **System invite marker**: invites from `createSystemInvite` are marked `createdBySystem`, so they never depend on the attributed user's org rights.
+
+### Migration notes
+
+Two nullable `invite` columns are added: `createdBySystem` (boolean) and `expiryNotifiedAt` (date). Run your migration before deploying. If you ran with `hashTokens: false`, resend pending invites after upgrading. If you attributed system invites with `inviter.userId`, mark them or keep `revalidateInviterOnRedeem: false` for now. The [upgrade guide](/docs/upgrading) walks through every step. Better Auth 1.6.20 or later is still required.
