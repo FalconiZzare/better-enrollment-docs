@@ -7,10 +7,10 @@ date: "2026-11-23"
 
 ### Security
 
-- **Medium**: a customised organization plugin `creatorRole` is now held to the same rule as `owner`: an invite grants it only with `allowOwnerInvites` and from a member who holds such a role.
+- **Medium**: a customised organization plugin `creatorRole` is now held to the owner rule: an invite grants it only with `allowOwnerInvites` and from a member who holds that role. A role merely named `owner` is then an ordinary role.
 - **Low**: an inviter who no longer holds an owner-level role cannot complete its earlier owner invites; they are withdrawn when its role changes, and re-checked at redemption with `revalidateInviterOnRedeem`.
-- **Low**: `org-create` invites found an organization, so creating one, resending one as a public link and redeeming your own now need `invite: ["manage-orgs"]`. See [The invite actions](/docs/permissions#the-invite-actions).
-- **Low**: a disabled organization stays closed when a request names it through an invitation id or a team.
+- **Low**: `org-create` invites found an organization, so creating one, resending one as a public link and redeeming your own now need `invite: ["manage-orgs"]`, and with `revalidateInviterOnRedeem` their creator must still hold it at redemption. See [The invite actions](/docs/permissions#the-invite-actions).
+- **Low**: a disabled organization stays closed when a request names it through an invitation id or a team, and drops out of an invitee's invitation list.
 
 ### May affect you
 
