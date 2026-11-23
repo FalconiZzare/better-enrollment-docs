@@ -51,7 +51,7 @@ export const admin = ac.newRole({
 
 export const support = ac.newRole({
   user: ["get", "list"],
-  invite: ["create", "list"] // may invite (default role only) and see invites
+  invite: ["create", "list"] // may send app invites (default role only) and see invites
 });
 ```
 
@@ -79,12 +79,12 @@ betterEnrollment({ ac, roles, permissionResource: "enrollment" });
 
 | Action        | Gates                                                                 |
 | ------------- | --------------------------------------------------------------------- |
-| `create`      | `invite.create`, and resend/list scoping for org members              |
+| `create`      | `invite.create` (`org-create` also needs `manage-orgs`), and resend/list scoping for org members |
 | `resend`      | `invite.resend`                                                       |
 | `list`        | `invite.list`, `invite.org.usage`                                     |
 | `cancel`      | `invite.revoke`                                                       |
 | `delete`      | `invite.delete`                                                       |
-| `manage-orgs` | `invite.org.setSeatLimit`, `invite.org.disable` / `enable` / `delete` |
+| `manage-orgs` | `org-create` invites (create, public resend, redeeming your own), `invite.org.setSeatLimit`, `invite.org.disable` / `enable` / `delete` |
 
 `inviteAdminAc` grants all six; `inviteUserAc` grants none.
 
@@ -171,12 +171,12 @@ If you gate management with `canManageInvites` and have no admin plugin, there i
 2. The role is listed for one of the inviter's org roles in `organization.grantableRoles`.
 3. The inviter holds `member: ["update"]` in that organization, the permission the org plugin requires to change a member's role. The org plugin's `creatorRole` (default `owner`) always passes.
 
-The owner role keeps its own rule: `allowOwnerInvites` and an owner creator. A refused inviter gets `ORG_ROLE_NOT_GRANTABLE`.
+The org plugin's `creatorRole` (`owner` unless you change it) keeps its own rule, as in the org plugin: it needs `allowOwnerInvites` and an inviter who holds that role. With a custom `creatorRole`, a role merely named `owner` is an ordinary role. It applies at creation (`OWNER_INVITES_NOT_ALLOWED`), on a public resend (`ORG_ROLE_NOT_GRANTABLE`), when the inviter's org role changes, and when you redeem your own invite. A refused inviter for any other role gets `ORG_ROLE_NOT_GRANTABLE`.
 
 ### Resending and redeeming
 
 - **Resend**: resending a public invite returns its new link to the resender, so it is checked exactly like creating it. App admins acting as a moderation backstop cannot resend a public org link with a non-default org role unless they are a member allowed to grant it. Private resends are unaffected: the link only goes to the invitee's mailbox.
-- **Your own invite**: redeeming an invite you created requires full authority over each non-default role it grants: `user:set-role` for the app role, `member:update` for the org role. `grantableRoles` and the callbacks delegate to others, never to yourself (`CANNOT_REDEEM_OWN_INVITE`).
+- **Your own invite**: redeeming an invite you created requires full authority over each non-default role it grants: `user:set-role` for the app role, `member:update` for the org role (plus the owner rule above), `invite: ["manage-orgs"]` for an `org-create` invite. `grantableRoles` and the callbacks delegate to others, never to yourself (`CANNOT_REDEEM_OWN_INVITE`).
 
 ## Where to go next
 

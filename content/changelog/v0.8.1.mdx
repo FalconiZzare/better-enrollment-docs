@@ -1,0 +1,26 @@
+---
+title: Security fixes
+description: Owner-level organization roles, permission to found organizations, disabled organizations, and the founder's role under a custom creatorRole. Upgrade; access-control roles that create org-create invites may need manage-orgs.
+version: 0.8.1
+date: "2026-11-23"
+---
+
+### Security
+
+- **Medium**: a customised organization plugin `creatorRole` is now held to the owner rule: an invite grants it only with `allowOwnerInvites` and from a member who holds that role. A role merely named `owner` is then an ordinary role.
+- **Low**: an inviter who no longer holds an owner-level role cannot complete its earlier owner invites; they are withdrawn when its role changes, and re-checked at redemption with `revalidateInviterOnRedeem`.
+- **Low**: `org-create` invites found an organization, so creating one, resending one as a public link and redeeming your own now need `invite: ["manage-orgs"]`, and with `revalidateInviterOnRedeem` their creator must still hold it at redemption. See [The invite actions](/docs/permissions#the-invite-actions).
+- **Low**: a disabled organization stays closed when a request names it through an invitation id or a team, and drops out of an invitee's invitation list.
+
+### Fixes
+
+- The founder of an organization created through an `org-create` invite now gets the organization plugin's `creatorRole` when `orgCreateRole` is not set. It used to get `owner` even when the app's `creatorRole` was another role, so a founder in such an app could not manage their own organization.
+
+### May affect you
+
+- **Founding organizations**: access-control roles that create `org-create` invites with `invite: ["create"]` alone need `manage-orgs` added. Apps that gate invites with `adminRoles`, `adminUserIds` or `canManageInvites` are not affected.
+- **Custom `creatorRole`**: founders now get your `creatorRole`. To keep granting `owner`, set `organization.orgCreateRole: "owner"`. If your app also defines a role named `owner`, invites as `owner` now follow the ordinary rule (`member: ["update"]` or `organization.grantableRoles`), and `allowOwnerInvites` governs your `creatorRole` instead. Apps that keep the default `creatorRole` are not affected.
+
+### Migration notes
+
+No schema changes and no new options.

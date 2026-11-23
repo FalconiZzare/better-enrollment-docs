@@ -6,7 +6,7 @@ icon: ShieldCheck
 
 ## What is blocked in invite-only mode
 
-A private invite pre-creates its user, the shell. The shell holds only `defaultRole`; the invited role is written when the invite is redeemed. While the invite is not accepted, redemption is the shell's only way in. This is enforced on the user row by database hooks, so it holds on every path, including plugins Better Enrollment does not know about:
+A private invite pre-creates its user, the shell. A shell created on 0.8.0 or later holds only `defaultRole`, and the invited role is written when the invite is redeemed; shells created by earlier versions keep the invited role until then, behind the same guards. While the invite is not accepted, redemption is the shell's only way in. This is enforced on the user row by database hooks, so it holds on every path, including plugins Better Enrollment does not know about:
 
 | Attempt                                                                                                   | Blocked by                                                 | Response                                |
 | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------- |
