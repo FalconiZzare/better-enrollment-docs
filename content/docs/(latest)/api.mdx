@@ -17,7 +17,7 @@ authClient.invite.redeem({ token, ... });
 // -> { action: "ACCEPTED", ... } or, for a public sign-up, { action: "CHECK_EMAIL" }
 ```
 
-### Management [!updated]
+### Management
 
 ```ts
 authClient.invite.create({ kind?, type?, email?, name?, role?, maxUses?, expiresIn?,
@@ -72,7 +72,7 @@ authClient.invite.org.enable({ organizationId, unbanMembers? });
 authClient.invite.org.delete({ organizationId, banMembers? });
 ```
 
-## Server-only [!updated]
+## Server-only
 
 These endpoints are never mounted as HTTP routes; they exist only on `auth.api`.
 

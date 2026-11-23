@@ -2,9 +2,10 @@
 title: Security
 description: What is blocked, why, and how tokens are stored.
 icon: ShieldCheck
+status: updated
 ---
 
-## What is blocked in invite-only mode
+## What is blocked in invite-only mode [!updated]
 
 A private invite creates no account. Redemption creates it, verified and with the invited role, so until then there is no user to sign into, verify, reset or link. Accounts come only from redemption: a database hook refuses every other way of creating a user in invite-only mode, including sign-up paths from plugins Better Enrollment does not know about.
 
@@ -21,7 +22,7 @@ Accounts are created only by invite redemption, the admin plugin's `createUser`,
 
 With `allowOpenSignup` (an invite-only app that keeps some sign-up paths open on purpose), the hook refuses only addresses holding a pending private invite: those enter through their invite, everyone else through your open paths. That costs one indexed lookup per account created outside redemption.
 
-### Users pre-created before 1.0
+### Users pre-created before 1.0 [!new]
 
 Invites created by 0.x pre-created an unverified user holding only `defaultRole`. Those users keep their guards until their invite is redeemed or withdrawn:
 
@@ -54,7 +55,7 @@ An invite that grants a role is a role assignment, so the right to send invites 
 
 See [Permissions: granting roles](/docs/permissions#granting-roles).
 
-## What callers can learn
+## What callers can learn [!updated]
 
 Invite management never reports more than the caller may manage. `resend`, `revoke`, `delete` and `uses` check the caller's rights before anything else, so a caller without them gets one error for every invite id: pending, revoked, accepted or nonexistent. That error is `NOT_ALLOWED_TO_MANAGE_INVITES` in apps without the organization plugin and `ORG_INVITE_NOT_ALLOWED` in apps with it; it depends on your setup, never on the invite. `invite.list` hides other users' internal ids (`preCreatedUserId`, `createdByUserId`, `revokedByUserId`) from org inviters; app admins still see them.
 

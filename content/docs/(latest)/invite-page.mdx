@@ -17,7 +17,7 @@ const token =
 const { data: invite } = await authClient.invite.lookup({ token });
 ```
 
-## Rendering by `nextAction` [!updated]
+## Rendering by `nextAction`
 
 | `invite.nextAction` | Meaning                       | What to render                               |
 | ------------------- | ----------------------------- | -------------------------------------------- |
@@ -82,7 +82,7 @@ await authClient.invite.verifySlug({ token, slug }); // same as invite.checkSlug
 
 `invite.get` and `invite.checkSlug` take the token in the query. Links sent before 1.0, or with [`linkStyle: "query"`](/docs/options#links), carry `?token=`; both lookups accept the same token, so read either place as above.
 
-## Redeeming
+## Redeeming [!updated]
 
 Submit everything to one endpoint:
 
@@ -114,7 +114,7 @@ await authClient.signIn.email({ email, password });
 
 In the `CONFIRM` flow the user was already signed in, and nothing about their session (including the active organization) is changed; switching to a newly joined org is your call.
 
-### Organization name and slug [!new]
+### Organization name and slug
 
 When the founder names their organization (`org-create` without a [preset](/docs/organizations#preset-organizations)), the name must be 1 to 200 characters with no line breaks or control characters, and the slug lowercase letters, numbers and single dashes, up to 48 characters. Case and surrounding spaces are normalized first, so `" Acme-Corp "` is accepted as `acme-corp`. Anything else fails with `422 INVALID_ORG_NAME` or `INVALID_ORG_SLUG`, and the invite is not used up.
 

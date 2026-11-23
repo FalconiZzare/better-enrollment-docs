@@ -54,7 +54,7 @@ await authClient.invite.org.usage({ organizationId });
 // -> { seatLimit, members, pendingReserved, remaining }
 ```
 
-## Preset organizations [!new]
+## Preset organizations
 
 By default an `org-create` invite lets the founder name their organization on the invite page. When the inviter should decide instead (a platform onboarding a named customer, say), preset it at creation:
 
@@ -134,7 +134,7 @@ App admins come from the admin plugin's AC file (`ac` and `roles` passed to the 
 
 One actor sits outside this table: trusted server code. The server-only [`createSystemInvite`](/docs/api#server-only) endpoint can create any invite kind, including `org-join`, without a session or org membership; seat limits, disabled-org checks, and the `allowOwnerInvites` switch still apply. System invites store a self-declared inviter and, unless the caller passes `inviter.userId`, a null `createdByUserId`, so they remain distinguishable from member-created invites in the audit trail. When your server sends an invite on someone's behalf (for example a parent organization inviting a child organization's first owner), pass their id as `inviter.userId`: the invite is attributed to them and cleaned up with their other pending invites if they are banned or removed. System invites are marked `createdBySystem`, so they never depend on that user's org rights. Either way, attribution is only as trustworthy as the code that called the endpoint.
 
-## When invites are withdrawn automatically
+## When invites are withdrawn automatically [!updated]
 
 An invite never outlives its inviter's standing. Pending invites are cancelled (and users pre-created by 0.x invites removed) when:
 

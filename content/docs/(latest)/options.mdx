@@ -86,7 +86,7 @@ The first two run on create and on resend. `inviteId`, `organizationId`, `organi
   default), or leave them out, so an inviter cannot slip links or markup into your mail.
 </Callout>
 
-## Roles
+## Roles [!updated]
 
 ```ts title="auth.ts"
 betterEnrollment({
@@ -113,7 +113,7 @@ betterEnrollment({
 
 `maxExpiresIn` and `maxPublicUses` bound what callers send; larger values get `EXPIRES_IN_TOO_LONG` or `MAX_USES_TOO_HIGH`. Your own `expiresIn` and `publicExpiresIn` are not capped. A lifetime too large to be a date is always rejected with `EXPIRES_IN_TOO_LONG`. `resendCooldown` stops one private invite from being mailed again and again: a resend within the cooldown of the last send (creation counts) gets `429 RESEND_TOO_SOON`.
 
-## Security posture
+## Security posture [!updated]
 
 ```ts title="auth.ts"
 betterEnrollment({
@@ -192,7 +192,7 @@ betterEnrollment({
 });
 ```
 
-## Links
+## Links [!updated]
 
 ```ts title="auth.ts"
 betterEnrollment({
@@ -238,7 +238,7 @@ betterEnrollment({
 
 `beforeOrgCreate` runs when an `org-create` redemption is about to found its org. The fields it returns are stored on the new organization, and throwing an `APIError` refuses the redemption while the invite stays pending; see [Stamping your own fields](/docs/organizations#stamping-your-own-fields-with-beforeorgcreate).
 
-## Lifecycle hooks
+## Lifecycle hooks [!updated]
 
 ```ts title="auth.ts"
 betterEnrollment({
