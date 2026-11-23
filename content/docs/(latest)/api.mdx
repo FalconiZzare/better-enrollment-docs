@@ -100,7 +100,7 @@ await auth.api.createSystemInvite({
   never forward unvalidated client input into fields like `role`, `organizationId`, `maxUses`, or
   `inviter`. It also thins the audit trail: without `inviter.userId`, system invites store a null
   `createdByUserId` and a self-declared inviter, so attribution is only as trustworthy as the
-  caller, with the null `createdByUserId` keeping them distinguishable from human invites.
+  caller. Every system invite is marked `createdBySystem`, which keeps it distinguishable from human invites.
 </Callout>
 
 <Callout type="info" title="Preferred inviter name">

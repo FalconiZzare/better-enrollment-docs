@@ -116,6 +116,13 @@ export const inviteFields = [
     isOptional: true
   },
   {
+    name: "createdBySystem",
+    type: "boolean",
+    description:
+      "True for invites from createSystemInvite, whose inviter rights are never re-checked. Null on invites created before 1.0",
+    isOptional: true
+  },
+  {
     name: "inviterName",
     type: "string",
     description: "Denormalized inviter name, kept for display and audit"
@@ -152,6 +159,12 @@ export const inviteFields = [
     name: "revokedByUserId",
     type: "string",
     description: "User who revoked the invite",
+    isOptional: true
+  },
+  {
+    name: "expiryNotifiedAt",
+    type: "date",
+    description: "When onInviteExpired fired for this expiry; cleared when a resend revives the invite",
     isOptional: true
   },
   {

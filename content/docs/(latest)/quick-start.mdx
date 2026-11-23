@@ -53,9 +53,11 @@ import { admin } from "better-auth/plugins";
 import { betterEnrollment } from "@octopi-ai/better-enrollment";
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL, // required: invite links are built from it
   emailAndPassword: {
     enabled: true,
-    disableSignUp: true // closed: invitations are the only way in
+    disableSignUp: true, // closed: invitations are the only way in
+    requireEmailVerification: true
   },
   plugins: [
     admin(),
@@ -80,6 +82,7 @@ import { admin } from "better-auth/plugins";
 import { betterEnrollment } from "@octopi-ai/better-enrollment";
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL, // required: invite links are built from it
   emailAndPassword: {
     enabled: true // open: anyone signs up, invites grant roles
   },
@@ -204,24 +207,25 @@ See [Invites](/docs/invites) for org invites (`org-join`, `org-create`) and ever
 
 ## Build the invite page
 
-Every invite link points at one page in your app, carrying only `?token=`. The page calls `invite.get`, renders what the response says, and submits everything to `invite.redeem`; it never needs to know the invite kind or the mode.
+Every invite link points at one page in your app, carrying only `#token=`. The page calls `invite.lookup`, renders what the response says, and submits everything to `invite.redeem`; it never needs to know the invite kind or the mode.
 
 ```ts title="app/invite/page.tsx"
-// 1. Look up the token from the URL
-const { data: invite } = await authClient.invite.get({ token });
+// 1. Read the token from the link and look the invite up
+const token = new URLSearchParams(location.hash.slice(1)).get("token");
+const { data: invite } = await authClient.invite.lookup({ token });
 
 // 2. Render by invite.nextAction:
 //    "SIGN_UP"  -> a form with the fields in invite.requiredFields
-//    "SIGN_IN"  -> your sign-in form; keep the token in the URL
+//    "SIGN_IN"  -> your sign-in form; keep the token in the link
 //    "CONFIRM"  -> a single confirm button
 //    null       -> expired, revoked, or consumed; show a terminal message
 
 // 3. Submit to one endpoint
-await authClient.invite.redeem({ token, password, name, email });
-// -> { action: "ACCEPTED", organization? }
+const { data } = await authClient.invite.redeem({ token, password, name, email });
 
-// 4. Sign them in; a password redemption creates no session
-await authClient.signIn.email({ email, password });
+// 4. Private sign-up: sign them in; a password redemption creates no session.
+//    Public sign-up answers CHECK_EMAIL: tell them to check their inbox.
+if (data?.action === "ACCEPTED") await authClient.signIn.email({ email, password });
 ```
 
 The full rendering table and `requiredFields` reference are on [The invite page](/docs/invite-page).
@@ -247,7 +251,7 @@ The full rendering table and `requiredFields` reference are on [The invite page]
 
 <Tab value="invite-only">
 
-The invitee has no account, so `invite.get` returns `nextAction: "SIGN_UP"`. Redeeming creates the user and their credential account in one atomic step. No session is created, you should sign them in right after, via your application's designated login flow.".
+The invitee has no account, so `invite.lookup` returns `nextAction: "SIGN_UP"`. Redeeming creates the user and their credential account in one atomic step. No session is created; sign them in right after through your app's login flow.
 
 </Tab>
 

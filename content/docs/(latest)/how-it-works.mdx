@@ -23,7 +23,7 @@ An admin (or an org member with permission) creates it. Private invites are emai
 
 ### The invitee lands on your invite page
 
-Every invite link points at one page in your app carrying only `?token=`. The page calls `invite.get`, renders what `nextAction` and `requiredFields` say, and submits to `invite.redeem`.
+Every invite link points at one page in your app carrying only `#token=`. The page calls `invite.lookup`, renders what `nextAction` and `requiredFields` say, and submits to `invite.redeem`.
 
 </Step>
 

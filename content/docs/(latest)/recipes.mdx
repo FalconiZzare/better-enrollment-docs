@@ -7,7 +7,7 @@ icon: ChefHat
 ## Custom invite link URL
 
 ```ts
-buildInviteUrl: ({ token }) => `${process.env.APP_URL}/invite?token=${encodeURIComponent(token)}`,
+buildInviteUrl: ({ token }) => `${process.env.APP_URL}/invite#token=${encodeURIComponent(token)}`,
 ```
 
 ## Captcha on redemption endpoints

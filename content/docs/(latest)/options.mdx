@@ -93,11 +93,11 @@ betterEnrollment({
   validRoles: ["user", "admin"], // omit to skip validation
   fallbackRole: undefined, // used when an invited role was deleted
   defaultRole: "user",
-  publicInviteRoles: ["user"] // roles a public link may grant; omit for any role
+  publicInviteRoles: ["user"] // roles a public link may grant; default [defaultRole], null for any
 });
 ```
 
-A public link reaches whoever holds it, so `publicInviteRoles` keeps public invites to low roles. It is checked at create and resend (`422 ROLE_NOT_ALLOWED_FOR_PUBLIC_INVITE`) and again at redemption (`403`), so narrowing the list also stops links issued before. `organization.publicInviteRoles` does the same for the org role of public `org-join` invites. Private invites are not affected. The next major version will default it to `[defaultRole]`.
+A public link reaches whoever holds it, so `publicInviteRoles` keeps public invites to low roles. It is checked at create and resend (`422 ROLE_NOT_ALLOWED_FOR_PUBLIC_INVITE`) and again at redemption (`403`), so narrowing the list also stops links issued before. `organization.publicInviteRoles` does the same for the org role of public `org-join` invites. Private invites are not affected. Both default to the default role alone (`[defaultRole]`, `[defaultOrganizationRole]`); set `null` to allow any role.
 
 ## Lifetime and usage
 
@@ -117,13 +117,12 @@ betterEnrollment({
 
 ```ts title="auth.ts"
 betterEnrollment({
-  hashTokens: true,
   autoVerifyPublicInviteEmail: false,
   exposeEmailOnGet: false
 });
 ```
 
-`hashTokens: false` stores live links in your database and is deprecated: the plugin warns at startup, and the next major version removes it.
+Tokens are always stored hashed; see [Tokens](/docs/security#tokens).
 
 `autoVerifyPublicInviteEmail` and its trade-offs are covered in [Verifying public-invite emails](/docs/invites#verifying-public-invite-emails). By default `invite.get` returns a masked email such as `a***@example.com`; see [The invite page](/docs/invite-page).
 
@@ -189,7 +188,7 @@ Which roles an inviter may grant ([Granting roles](/docs/permissions#granting-ro
 betterEnrollment({
   grantableRoles: undefined, // { support: ["user", "partner"] }: granted without user:set-role
   canGrantRole: undefined, // (user, role) => boolean, overrides the ceiling
-  grantableRolesCheck: "warn" // "warn" | "error" | "off": grantable roles must not exceed their holder
+  grantableRolesCheck: "error" // "error" | "warn" | "off": grantable roles must not exceed their holder
 });
 ```
 
@@ -197,14 +196,14 @@ betterEnrollment({
 
 ```ts title="auth.ts"
 betterEnrollment({
-  linkStyle: "fragment", // "/invite#token=..." instead of "/invite?token=..."
+  linkStyle: "fragment", // "/invite#token=..."; "query" for "/invite?token=..."
   buildInviteUrl: ({ token, type, mode }) => `https://app.example.com/invite#token=${token}`
 });
 ```
 
-Without `buildInviteUrl`, links are built from Better Auth's `baseURL` (or `BETTER_AUTH_URL`). With neither set, links use the host of each request, so set one of them; the plugin warns at startup in that case, and the next major version will require one.
+Without `buildInviteUrl`, links are built from Better Auth's `baseURL` (or `BETTER_AUTH_URL`). One of them is required: with neither, the plugin refuses to start, so links never take their host from a request. Apps that resolve the base URL per request (`allowedHosts`) set `buildInviteUrl`.
 
-`linkStyle: "fragment"` puts the token after `#`. Browsers never send the fragment to a server, so the token stays out of access logs, proxies and `Referer` headers. Your page reads it from `location.hash` and looks the invite up with [`invite.lookup`](/docs/invite-page#keeping-the-token-out-of-urls), the POST twin of `invite.get`. `buildInviteUrl` overrides `linkStyle`.
+`linkStyle: "fragment"` (the default) puts the token after `#`. Browsers never send the fragment to a server, so the token stays out of access logs, proxies and `Referer` headers. Your page reads it from `location.hash` and looks the invite up with [`invite.lookup`](/docs/invite-page#keeping-the-token-out-of-urls), the POST twin of `invite.get`. `buildInviteUrl` overrides `linkStyle`. `"query"` builds the `?token=` links of 0.x.
 
 ## Organizations [!updated]
 
@@ -224,8 +223,8 @@ betterEnrollment({
     defaultSeatLimit: undefined,
     resolveSeatLimit: undefined, // async (org) => number | null
     enforceSeatLimitOnOrgPlugin: true, // seat limit on the org plugin's invite-member / accept-invitation
-    runOrgPluginHooks: false, // call organizationHooks before/afterAddMember on redemption
-    respectMembershipLimit: false, // enforce the org plugin's membershipLimit (default 100) on redemption
+    runOrgPluginHooks: true, // call organizationHooks before/afterAddMember on redemption
+    respectMembershipLimit: true, // enforce the org plugin's membershipLimit (default 100) on redemption
     revokeInvitesOnInviterBan: true,
     beforeOrgCreate: undefined, // ({ invite, user, organization }) => extra org fields, or throw
     onOrgMemberAdded,
@@ -253,10 +252,12 @@ betterEnrollment({
 });
 ```
 
+`onInviteExpired` fires the first time an expired invite is read or redeemed, once per expiry; a resend that revives the invite starts a new one. It is recorded in the invite's `expiryNotifiedAt` column, so parallel reads do not fire it twice.
+
 `onInvitesCancelled` fires when the plugin withdraws invites on its own because their inviter or invitee lost standing; see [When invites are withdrawn automatically](/docs/organizations#when-invites-are-withdrawn-automatically). It is called once per batch of up to 1000 invites, and its errors are logged without undoing the cancellation.
 
 ```ts title="auth.ts"
 betterEnrollment({
-  revalidateInviterOnRedeem: false // true: re-check the creator's rights at redemption
+  revalidateInviterOnRedeem: true // re-check the creator's rights at redemption; system invites are exempt
 });
 ```
