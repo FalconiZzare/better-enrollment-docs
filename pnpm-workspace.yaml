@@ -2,3 +2,9 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+
+# Patched transitive versions (security audit 2026-11, BE-DOC-01).
+overrides:
+  nanoid@<3.3.18: ^3.3.18
+  source-map-js@<1.2.2: ^1.2.2
+  zod@<4.6.6: ^4.6.6

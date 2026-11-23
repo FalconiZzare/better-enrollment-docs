@@ -1,0 +1,78 @@
+---
+title: The two modes
+description: Invite-only and open, and how auto-detection picks one.
+icon: Split
+---
+
+import { Tab, Tabs, TabsList, TabsTrigger } from "fumadocs-ui/components/tabs";
+import { Lock, Rocket, Ticket, UserPlus } from "lucide-react";
+
+Better Enrollment's `mode` accepts `"auto"` (default), `"invite-only"`, or `"open"`. In `auto` the plugin inspects your config at startup: everything closed means invite-only, everything open means open, and a mixed config throws with a message naming each path, asking you to set `mode` explicitly.
+
+<Callout type="warn" title="Your responsibility, for now">
+  Detection sees `emailAndPassword`, `socialProviders`, and the [magic-link
+  plugin](/docs/v0.7.0/magic-link). Sign-up paths added by other plugins (email OTP, passkey, phone
+  number, anonymous, generic OAuth) are invisible to it and are NOT blocked at runtime, so any of
+  them silently bypasses invite-only mode. If you use one, you must close or remove its sign-up path
+  yourself. A runtime backstop that rejects non-invite user creation is on the
+  [roadmap](/docs/v0.7.0/roadmap).
+</Callout>
+
+## The two configurations
+
+<Tabs groupId="enrollment-mode" persist defaultValue="invite-only">
+
+<TabsList>
+  <TabsTrigger value="invite-only">
+    <Lock />
+    Invite-only (closed app)
+  </TabsTrigger>
+  <TabsTrigger value="open-signup">
+    <UserPlus />
+    Open sign-up
+  </TabsTrigger>
+</TabsList>
+
+<Tab value="invite-only">
+
+All sign-up routes are disabled and the plugin creates users through Better Auth's internal adapter. Setting it explicitly while a sign-up path is still open throws at init; `allowOpenSignup: true` downgrades that to a warning, and the guarantee becomes per-email: pending invites still lock their own address while everyone else signs up freely.
+
+```ts title="auth.ts"
+emailAndPassword: {
+  enabled: true,
+  disableSignUp: true
+},
+plugins: [admin(), betterEnrollment({ /* ... */ })],
+```
+
+</Tab>
+
+<Tab value="open-signup">
+
+Anyone signs up normally, and redeeming an invite merges the invited role and any org membership into their existing account.
+
+```ts title="auth.ts"
+emailAndPassword: { enabled: true },
+plugins: [admin(), betterEnrollment({ /* ... */ })],
+```
+
+</Tab>
+
+</Tabs>
+
+## Where to go next
+
+<Cards>
+  <Card
+    icon={<Ticket />}
+    title="Invites"
+    description="Kinds, delivery types, and how to create each one."
+    href="/docs/v0.7.0/invites"
+  />
+  <Card
+    icon={<Rocket />}
+    title="Quick Start"
+    description="Set up Better Enrollment step by step, for a closed app or open sign-up."
+    href="/docs/v0.7.0/quick-start"
+  />
+</Cards>

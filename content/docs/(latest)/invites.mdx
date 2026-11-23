@@ -100,7 +100,7 @@ await authClient.invite.resend({ inviteId });
 
 Resending mints a new token and a fresh expiry on the same invite row, so the previous link is invalidated the moment the call succeeds. Everything else is preserved: the invitee, roles, org and team bindings, remaining uses on a public invite, the seat reservation, and the audit history. An expired pending invite is revived with a new expiry, which is also the release valve for a locked email without deleting the invite.
 
-Permissions mirror creation: app admins resend `app` and `org-create` invites (and act as a moderation backstop), org members with `invitation: ["create"]` resend their org's `org-join` invites. Accepted and revoked invites cannot be resent, and reviving an expired `org-join` invite re-checks the seat limit, since its reservation had been released.
+Permissions mirror creation: app admins resend `app` and `org-create` invites (and act as a moderation backstop), org members with `invitation: ["create"]` resend their org's `org-join` invites. Resending a public invite returns its new link to the resender, so the resender must also be allowed to [grant its roles](/docs/permissions#granting-roles). Accepted and revoked invites cannot be resent, and reviving an expired `org-join` invite re-checks the seat limit, since its reservation had been released. A private invite is sent at most once per [`resendCooldown`](/docs/options#lifetime-and-usage) (60 seconds by default, creation included); a resend sooner gets `429 RESEND_TOO_SOON`, so map it to "just sent, try again in a minute" in your UI.
 
 ## Inviting someone who already has an account
 

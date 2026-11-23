@@ -75,7 +75,7 @@ export const auth = betterAuth({
 });
 ```
 
-Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in through your normal flow with the credentials they just set. See [The invite page](/docs/invite-page#redeeming). And when an invitation email goes missing, [`invite.resend`](/docs/invites#resending-an-invitation) invalidates the old link and delivers a fresh one.
+Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in through your normal flow with the credentials they just set. See [The invite page](/docs/v0.7.0/invite-page#redeeming). And when an invitation email goes missing, [`invite.resend`](/docs/v0.7.0/invites#resending-an-invitation) invalidates the old link and delivers a fresh one.
 
 ## The guarantees
 
@@ -90,7 +90,8 @@ Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in thr
   writers replace that string wholesale. The admin plugin's `setRole` is the usual culprit: it
   overwrites the field with exactly what you send, so calling it with just `"admin"` silently strips
   roles the user gained through invites. When you change roles from your own admin UI, always send
-  the full set. See the [recipe](/docs/recipes#changing-roles-without-losing-invite-granted-ones).
+  the full set. See the
+  [recipe](/docs/v0.7.0/recipes#changing-roles-without-losing-invite-granted-ones).
 </Callout>
 
 ## Where to go next
@@ -100,12 +101,12 @@ Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in thr
     icon={<Split />}
     title="The two modes"
     description="Invite-only and open, and how auto-detection picks one."
-    href="/docs/modes"
+    href="/docs/v0.7.0/modes"
   />
   <Card
     icon={<Ticket />}
     title="Invites"
     description="Kinds, delivery types, and how to create each one."
-    href="/docs/invites"
+    href="/docs/v0.7.0/invites"
   />
 </Cards>

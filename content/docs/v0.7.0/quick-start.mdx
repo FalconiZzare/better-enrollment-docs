@@ -98,7 +98,7 @@ export const auth = betterAuth({
 
 </Tabs>
 
-`mode: "auto"` (the default) inspects your config at startup and picks the right mode; a mixed config throws and asks you to set `mode` explicitly. See [The two modes](/docs/modes) for the details and its warning about sign-up paths added by other plugins.
+`mode: "auto"` (the default) inspects your config at startup and picks the right mode; a mixed config throws and asks you to set `mode` explicitly. See [The two modes](/docs/v0.7.0/modes) for the details and its warning about sign-up paths added by other plugins.
 
 </Step>
 
@@ -112,9 +112,9 @@ npx auth migrate
 npx auth generate
 ```
 
-On Better Auth 1.6 and earlier the CLI is `npx @better-auth/cli`. With Prisma or Drizzle, run `generate` and apply it with your ORM's migrations; see [Installation](/docs/installation#generate-the-schema).
+On Better Auth 1.6 and earlier the CLI is `npx @better-auth/cli`. With Prisma or Drizzle, run `generate` and apply it with your ORM's migrations; see [Installation](/docs/v0.7.0/installation#generate-the-schema).
 
-This creates the `invite` and `inviteUse` tables; see [Database](/docs/database) for every column.
+This creates the `invite` and `inviteUse` tables; see [Database](/docs/v0.7.0/database) for every column.
 
 <Callout type="warn" title="Role field required">
   Invited roles are stored in a string `role` field on your user model, and the default admin gate
@@ -196,7 +196,7 @@ await auth.api.createInvite({
 
 </Tabs>
 
-See [Invites](/docs/invites) for org invites (`org-join`, `org-create`) and every option.
+See [Invites](/docs/v0.7.0/invites) for org invites (`org-join`, `org-create`) and every option.
 
 </Step>
 
@@ -224,7 +224,7 @@ await authClient.invite.redeem({ token, password, name, email });
 await authClient.signIn.email({ email, password });
 ```
 
-The full rendering table and `requiredFields` reference are on [The invite page](/docs/invite-page).
+The full rendering table and `requiredFields` reference are on [The invite page](/docs/v0.7.0/invite-page).
 
 </Step>
 
@@ -270,24 +270,24 @@ The invitee signs up or signs in normally first (`nextAction: "SIGN_IN"`, or `"C
     icon={<Ticket />}
     title="Invites"
     description="Kinds, delivery types, and how to create each one."
-    href="/docs/invites"
+    href="/docs/v0.7.0/invites"
   />
   <Card
     icon={<PanelTop />}
     title="The invite page"
     description="Rendering by nextAction and the redeem call."
-    href="/docs/invite-page"
+    href="/docs/v0.7.0/invite-page"
   />
   <Card
     icon={<Building2 />}
     title="Organizations"
     description="Org invites, seat limits, and platform controls."
-    href="/docs/organizations"
+    href="/docs/v0.7.0/organizations"
   />
   <Card
     icon={<Settings2 />}
     title="Options"
     description="Every option betterEnrollment accepts, with defaults."
-    href="/docs/options"
+    href="/docs/v0.7.0/options"
   />
 </Cards>

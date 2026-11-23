@@ -23,9 +23,9 @@ const { data: invite } = await authClient.invite.get({ token });
 | `CONFIRM`           | Open mode, session present    | A confirm button, plus any fields listed     |
 | `null`              | Expired, revoked, or consumed | A clear terminal message                     |
 
-Two of the four are basic and never collect fields: `SIGN_IN` hands off to your sign-in form and `null` is a message. The other two are forms, and both can carry [additional fields](/docs/options#additional-fields): `SIGN_UP` collects them while creating the account, `CONFIRM` while activating on an existing one.
+Two of the four are basic and never collect fields: `SIGN_IN` hands off to your sign-in form and `null` is a message. The other two are forms, and both can carry [additional fields](/docs/v0.7.0/options#additional-fields): `SIGN_UP` collects them while creating the account, `CONFIRM` while activating on an existing one.
 
-`requiredFields` lists exactly what to collect: always `password` and `name` for sign-up, plus `email` for public invites, plus `organizationName` and `organizationSlug` for `org-create` unless the inviter [preset the organization](/docs/organizations#preset-organizations), in which case `invite.organizationName` already carries its name (`CONFIRM` has no built-in fields). Additional fields configured for the current step appear too: required ones in `requiredFields`, optional ones in `optionalFields`, and `invite.additionalFields` carries `{ type, required }` for each so your page knows which input to render:
+`requiredFields` lists exactly what to collect: always `password` and `name` for sign-up, plus `email` for public invites, plus `organizationName` and `organizationSlug` for `org-create` unless the inviter [preset the organization](/docs/v0.7.0/organizations#preset-organizations), in which case `invite.organizationName` already carries its name (`CONFIRM` has no built-in fields). Additional fields configured for the current step appear too: required ones in `requiredFields`, optional ones in `optionalFields`, and `invite.additionalFields` carries `{ type, required }` for each so your page knows which input to render:
 
 ```json
 {
@@ -56,7 +56,7 @@ Two of the four are basic and never collect fields: `SIGN_IN` hands off to your 
 
 <Tab value="invite-only">
 
-Most invitees have no account yet, so live invites return `nextAction: "SIGN_UP"`: your page is a sign-up form driven by `requiredFields`. An invitee who already holds an established account (an org inviting an existing user, or someone redeeming a second invite after signing up through the first) gets `"SIGN_IN"` (no session) or `"CONFIRM"` (signed in), exactly like open mode, so render all three plus `null`. The server decides from the account's live state; the page never has to work out which case it is in. On a [passwordless app](/docs/magic-link) the response carries `passwordless: true` and `requiredFields` omits `password`, so a field-driven form needs no special casing.
+Most invitees have no account yet, so live invites return `nextAction: "SIGN_UP"`: your page is a sign-up form driven by `requiredFields`. An invitee who already holds an established account (an org inviting an existing user, or someone redeeming a second invite after signing up through the first) gets `"SIGN_IN"` (no session) or `"CONFIRM"` (signed in), exactly like open mode, so render all three plus `null`. The server decides from the account's live state; the page never has to work out which case it is in. On a [passwordless app](/docs/v0.7.0/magic-link) the response carries `passwordless: true` and `requiredFields` omits `password`, so a field-driven form needs no special casing.
 
 </Tab>
 
@@ -109,12 +109,12 @@ In the `CONFIRM` flow the user was already signed in, and nothing about their se
     icon={<Building2 />}
     title="Organizations"
     description="Org invites, seat limits, and platform controls."
-    href="/docs/organizations"
+    href="/docs/v0.7.0/organizations"
   />
   <Card
     icon={<TriangleAlert />}
     title="Error codes"
     description="Every APIError code the plugin can return."
-    href="/docs/errors"
+    href="/docs/v0.7.0/errors"
   />
 </Cards>

@@ -1,0 +1,147 @@
+---
+title: The invite page
+description: One page and one redeem call handle every invite kind.
+icon: PanelTop
+status: updated
+---
+
+import { Tab, Tabs, TabsList, TabsTrigger } from "fumadocs-ui/components/tabs";
+import { Building2, Lock, TriangleAlert, UserPlus } from "lucide-react";
+
+Every invitation link points at the same page, carrying only `?token=`. The invitee never needs to know what kind of invite they hold.
+
+```ts
+const { data: invite } = await authClient.invite.get({ token });
+```
+
+## Rendering by `nextAction` [!updated]
+
+| `invite.nextAction` | Meaning                       | What to render                               |
+| ------------------- | ----------------------------- | -------------------------------------------- |
+| `SIGN_UP`           | Invite-only, no session       | The fields listed in `requiredFields`        |
+| `SIGN_IN`           | Open mode, no session         | Your sign-in form; keep the token in the URL |
+| `CONFIRM`           | Open mode, session present    | A confirm button, plus any fields listed     |
+| `null`              | Expired, revoked, or consumed | A clear terminal message                     |
+
+Two of the four are basic and never collect fields: `SIGN_IN` hands off to your sign-in form and `null` is a message. The other two are forms, and both can carry [additional fields](/docs/options#additional-fields): `SIGN_UP` collects them while creating the account, `CONFIRM` while activating on an existing one.
+
+`requiredFields` lists exactly what to collect: always `password` and `name` for sign-up, plus `email` for public invites, plus `organizationName` and `organizationSlug` for `org-create` unless the inviter [preset the organization](/docs/organizations#preset-organizations), in which case `invite.organizationName` already carries its name (`CONFIRM` has no built-in fields). Additional fields configured for the current step appear too: required ones in `requiredFields`, optional ones in `optionalFields`, and `invite.additionalFields` carries `{ type, required }` for each so your page knows which input to render:
+
+```json
+{
+  "nextAction": "SIGN_UP",
+  "requiredFields": ["password", "name", "department"],
+  "optionalFields": ["referral"],
+  "additionalFields": {
+    "department": { "type": "string", "required": true },
+    "referral": { "type": "string", "required": false }
+  }
+}
+```
+
+### What your page will see
+
+<Tabs groupId="enrollment-mode" persist defaultValue="invite-only">
+
+<TabsList>
+  <TabsTrigger value="invite-only">
+    <Lock />
+    Invite-only (closed app)
+  </TabsTrigger>
+  <TabsTrigger value="open-signup">
+    <UserPlus />
+    Open sign-up
+  </TabsTrigger>
+</TabsList>
+
+<Tab value="invite-only">
+
+Most invitees have no account yet, so live invites return `nextAction: "SIGN_UP"`: your page is a sign-up form driven by `requiredFields`. An invitee who already holds an established account (an org inviting an existing user, or someone redeeming a second invite after signing up through the first) gets `"SIGN_IN"` (no session) or `"CONFIRM"` (signed in), exactly like open mode, so render all three plus `null`. The server decides from the account's live state; the page never has to work out which case it is in. On a [passwordless app](/docs/magic-link) the response carries `passwordless: true` and `requiredFields` omits `password`, so a field-driven form needs no special casing.
+
+</Tab>
+
+<Tab value="open-signup">
+
+Invitees are normal users, so live invites return `"SIGN_IN"` (no session; show your sign-in form and keep the token in the URL) or `"CONFIRM"` (signed in; show one confirm button). `SIGN_UP` never appears in open mode.
+
+</Tab>
+
+</Tabs>
+
+### Keeping the token out of URLs [!new]
+
+With [`linkStyle: "fragment"`](/docs/options#links) the link carries the token after `#`, which never reaches a server. Read it on the page and use the POST lookups, so the token never appears in a URL your servers or proxies log:
+
+```ts
+const token = new URLSearchParams(location.hash.slice(1)).get("token");
+const { data: invite } = await authClient.invite.lookup({ token }); // same as invite.get
+await authClient.invite.verifySlug({ token, slug }); // same as invite.checkSlug
+```
+
+`invite.get` and `invite.checkSlug` keep working with the token in the query.
+
+## Redeeming
+
+Submit everything to one endpoint:
+
+```ts
+await authClient.invite.redeem({
+  token,
+  password,
+  name,
+  email,
+  organizationName,
+  organizationSlug
+  // ...plus any configured additional fields, e.g. department
+});
+// -> { action: "ACCEPTED", organization? }
+```
+
+`redeem` routes to the right semantics for the mode and kind, so your page never branches. The response says what happened, so you can render "You joined Acme" or "Your organization is ready".
+
+`name` is required whenever the redemption signs the invitee up (`nextAction: "SIGN_UP"`); a sign-up without a name defeats the profile-populating point of the flow, so it fails with `NAME_REQUIRED`. Sign-in and confirm flows act on an existing account and take no name; a `CONFIRM` redemption still submits any additional fields configured for that step, in the same body.
+
+A redemption that sets a password creates no session (a passwordless private redemption signs the user in and returns `signedIn: true`). After `ACCEPTED` in the sign-up flow, your page already holds the email and password it just collected, so sign the user in with them:
+
+```ts
+await authClient.signIn.email({ email, password });
+```
+
+In the `CONFIRM` flow the user was already signed in, and nothing about their session (including the active organization) is changed; switching to a newly joined org is your call.
+
+### Organization name and slug [!new]
+
+When the founder names their organization (`org-create` without a [preset](/docs/organizations#preset-organizations)), the name must be 1 to 200 characters with no line breaks or control characters, and the slug lowercase letters, numbers and single dashes, up to 48 characters. Case and surrounding spaces are normalized first, so `" Acme-Corp "` is accepted as `acme-corp`. Anything else fails with `422 INVALID_ORG_NAME` or `INVALID_ORG_SLUG`, and the invite is not used up.
+
+The client plugin checks the same rules before sending, so `invite.redeem`, `invite.checkSlug` and `invite.create` answer a malformed value immediately, with the same error the server would return and no network request. The server enforces the rules either way. For live feedback while the founder types, the rules are exported too:
+
+```ts
+import { isValidOrgSlug, slugify } from "@octopi-ai/better-enrollment/client";
+
+const suggested = slugify(organizationName); // "Acme Corp" -> "acme-corp"
+const slugOk = isValidOrgSlug(organizationSlug);
+```
+
+`invite.checkSlug({ query: { token, slug } })` then confirms the slug is still free. Organizations created through the organization plugin's own `/organization/create` are not covered; to apply the same rule there, call `isValidOrgSlug` from its `organizationHooks.beforeCreateOrganization`.
+
+<Callout title="A deliberately thin payload">
+  `invite.get` returns only kind, role, derived status, expiry, uses remaining, and a masked email
+  such as `a***@example.com`. Never the inviter's identity or internal ids.
+</Callout>
+
+## Where to go next
+
+<Cards>
+  <Card
+    icon={<Building2 />}
+    title="Organizations"
+    description="Org invites, seat limits, and platform controls."
+    href="/docs/organizations"
+  />
+  <Card
+    icon={<TriangleAlert />}
+    title="Error codes"
+    description="Every APIError code the plugin can return."
+    href="/docs/errors"
+  />
+</Cards>

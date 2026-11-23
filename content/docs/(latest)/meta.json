@@ -1,0 +1,29 @@
+{
+  "title": "v0.8.0 (latest)",
+  "description": "Better Enrollment v0.8.0",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "installation",
+    "quick-start",
+    "---Core Concepts---",
+    "how-it-works",
+    "modes",
+    "magic-link",
+    "invites",
+    "invite-page",
+    "permissions",
+    "organizations",
+    "---Reference---",
+    "options",
+    "api",
+    "errors",
+    "database",
+    "---Guides---",
+    "security",
+    "recipes",
+    "operations",
+    "roadmap"
+  ]
+}

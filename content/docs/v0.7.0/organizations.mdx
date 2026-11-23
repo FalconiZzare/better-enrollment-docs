@@ -65,7 +65,7 @@ await auth.api.createInvite({
 
 The founder then fills in only their own account. `invite.get` returns the preset as `organizationName` and leaves `organizationName` and `organizationSlug` out of `requiredFields`, and the invitation emails receive `organizationName` on create and resend. Redemption founds the org with the preset name and ignores any org fields in the redeem body, so the invitee cannot rename it.
 
-The slug is the preset one, or one derived from the name (`"Acme Corp"` becomes `acme-corp`). The founder has no way to pick another, so a slug that is taken by redemption time gets a short random suffix (`acme-corp-x7k2qp`) instead of failing with `ORG_SLUG_TAKEN`. Without a preset, nothing changes: the founder enters both fields and a taken slug fails as before. `organization` is accepted only on `org-create` invites; other kinds reject it with `ORG_FIELDS_NOT_ALLOWED`. It works the same through [`createSystemInvite`](/docs/api#server-only).
+The slug is the preset one, or one derived from the name (`"Acme Corp"` becomes `acme-corp`). The founder has no way to pick another, so a slug that is taken by redemption time gets a short random suffix (`acme-corp-x7k2qp`) instead of failing with `ORG_SLUG_TAKEN`. Without a preset, nothing changes: the founder enters both fields and a taken slug fails as before. `organization` is accepted only on `org-create` invites; other kinds reject it with `ORG_FIELDS_NOT_ALLOWED`. It works the same through [`createSystemInvite`](/docs/v0.7.0/api#server-only).
 
 ### Stamping your own fields with `beforeOrgCreate`
 
@@ -107,9 +107,9 @@ await authClient.invite.org.delete({ organizationId });
 | Revoke or delete                   | Moderation backstop | Own org            | Own org (`invitation:cancel`)   | No           |
 | Seat limits, disable, delete org   | Yes                 | No                 | No                              | No           |
 
-App admins come from the admin plugin's AC file (`ac` and `roles` passed to the plugin) or, without one, from `adminRoles` (default `["admin"]`), `adminUserIds`, or your own `canManageInvites(user)` callback; see [Permissions](/docs/permissions). Org permissions are the org plugin's own access control. Cross-org calls return `FORBIDDEN`, and unknown org ids look identical so they cannot be enumerated.
+App admins come from the admin plugin's AC file (`ac` and `roles` passed to the plugin) or, without one, from `adminRoles` (default `["admin"]`), `adminUserIds`, or your own `canManageInvites(user)` callback; see [Permissions](/docs/v0.7.0/permissions). Org permissions are the org plugin's own access control. Cross-org calls return `FORBIDDEN`, and unknown org ids look identical so they cannot be enumerated.
 
-One actor sits outside this table: trusted server code. The server-only [`createSystemInvite`](/docs/api#server-only) endpoint can create any invite kind, including `org-join`, without a session or org membership; seat limits, disabled-org checks, and the `allowOwnerInvites` switch still apply. System invites store a self-declared inviter and, unless the caller passes `inviter.userId`, a null `createdByUserId`, so they remain distinguishable from member-created invites in the audit trail. When your server sends an invite on someone's behalf (for example a parent organization inviting a child organization's first owner), pass their id as `inviter.userId`: the invite is attributed to them and cleaned up with their other pending invites if they are banned or removed. Either way, attribution is only as trustworthy as the code that called the endpoint.
+One actor sits outside this table: trusted server code. The server-only [`createSystemInvite`](/docs/v0.7.0/api#server-only) endpoint can create any invite kind, including `org-join`, without a session or org membership; seat limits, disabled-org checks, and the `allowOwnerInvites` switch still apply. System invites store a self-declared inviter and, unless the caller passes `inviter.userId`, a null `createdByUserId`, so they remain distinguishable from member-created invites in the audit trail. When your server sends an invite on someone's behalf (for example a parent organization inviting a child organization's first owner), pass their id as `inviter.userId`: the invite is attributed to them and cleaned up with their other pending invites if they are banned or removed. Either way, attribution is only as trustworthy as the code that called the endpoint.
 
 ## Where to go next
 
@@ -118,12 +118,12 @@ One actor sits outside this table: trusted server code. The server-only [`create
     icon={<Settings2 />}
     title="Options"
     description="Every option betterEnrollment accepts, with defaults."
-    href="/docs/options"
+    href="/docs/v0.7.0/options"
   />
   <Card
     icon={<ShieldCheck />}
     title="Security"
     description="What is blocked, why, and how tokens are stored."
-    href="/docs/security"
+    href="/docs/v0.7.0/security"
   />
 </Cards>

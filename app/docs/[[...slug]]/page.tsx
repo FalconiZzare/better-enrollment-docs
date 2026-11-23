@@ -16,6 +16,9 @@ import { appName, gitConfig } from "@/lib/shared";
 import { JsonLd } from "@/components/json-ld";
 import { buildDocsSchema } from "@/lib/schema";
 import { getLastModified } from "@/lib/last-modified";
+import { archivedVersionOf, LATEST_VERSION } from "@/lib/versions";
+import { Callout } from "fumadocs-ui/components/callout";
+import Link from "next/link";
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
@@ -25,6 +28,8 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const MDX = page.data.body;
   const markdownUrl = getPageMarkdownUrl(page).url;
   const lastUpdate = getLastModified(`content/docs/${page.path}`);
+  const archived = archivedVersionOf(page.slugs);
+  const latestUrl = `/docs/${page.slugs.slice(1).join("/")}`.replace(/\/$/, "");
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
@@ -38,6 +43,12 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`}
         />
       </div>
+      {archived ? (
+        <Callout type="warn" title={`You are reading the ${archived.label} docs`}>
+          This version is no longer the latest.{" "}
+          <Link href={latestUrl}>See this page in the {LATEST_VERSION.label} docs</Link>.
+        </Callout>
+      ) : null}
       <DocsBody>
         <MDX
           components={getMDXComponents({
@@ -60,12 +71,15 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  const archived = archivedVersionOf(page.slugs);
   return {
-    title: page.data.title,
+    title: archived ? `${page.data.title} (${archived.label})` : page.data.title,
     description: page.data.description,
     alternates: {
       canonical: page.url
     },
+    // Archived versions stay reachable but out of search engines.
+    ...(archived ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       title: page.data.title,
       description: page.data.description,
