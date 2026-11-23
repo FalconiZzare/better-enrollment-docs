@@ -16,7 +16,7 @@ betterEnrollment({
 });
 ```
 
-`mode: "auto"` inspects your config at startup and picks the right mode; a mixed config throws and asks you to set `mode` explicitly. `allowOpenSignup: true` downgrades the open-sign-up-path error in invite-only mode to a warning, making the guarantee per-email. See [The two modes](/docs/modes).
+`mode: "auto"` inspects your config at startup and picks the right mode; a mixed config throws and asks you to set `mode` explicitly. `allowOpenSignup: true` downgrades the open-sign-up-path error in invite-only mode to a warning, making the guarantee per-email: accounts may then be created outside redemption, except for addresses holding a pending private invite. See [The two modes](/docs/modes).
 
 ## Delivery [!updated]
 
@@ -118,8 +118,6 @@ betterEnrollment({
   passwordless: "auto" // true | false | "auto" (magic link present, no emailAndPassword)
 });
 ```
-
-`passwordlessVerifyPaths` is deprecated and ignored: pre-created users are refused a session on every path.
 
 ## Additional fields
 
