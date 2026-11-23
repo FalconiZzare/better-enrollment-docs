@@ -11,11 +11,11 @@ Better Enrollment's `mode` accepts `"auto"` (default), `"invite-only"`, or `"ope
 
 <Callout type="warn" title="Your responsibility, for now">
   Detection sees `emailAndPassword`, `socialProviders`, and the [magic-link
-  plugin](/docs/v0.7.0/magic-link). Sign-up paths added by other plugins (email OTP, passkey, phone
-  number, anonymous, generic OAuth) are invisible to it and are NOT blocked at runtime, so any of
-  them silently bypasses invite-only mode. If you use one, you must close or remove its sign-up path
+  plugin](/docs/v0.8.1/magic-link). Sign-up paths added by other plugins (email OTP, passkey, phone number,
+  anonymous, generic OAuth) are invisible to it and are NOT blocked at runtime, so any of them
+  silently bypasses invite-only mode. If you use one, you must close or remove its sign-up path
   yourself. A runtime backstop that rejects non-invite user creation is on the
-  [roadmap](/docs/v0.7.0/roadmap).
+  [roadmap](/docs/v0.8.1/roadmap).
 </Callout>
 
 ## The two configurations
@@ -67,12 +67,12 @@ plugins: [admin(), betterEnrollment({ /* ... */ })],
     icon={<Ticket />}
     title="Invites"
     description="Kinds, delivery types, and how to create each one."
-    href="/docs/v0.7.0/invites"
+    href="/docs/v0.8.1/invites"
   />
   <Card
     icon={<Rocket />}
     title="Quick Start"
     description="Set up Better Enrollment step by step, for a closed app or open sign-up."
-    href="/docs/v0.7.0/quick-start"
+    href="/docs/v0.8.1/quick-start"
   />
 </Cards>

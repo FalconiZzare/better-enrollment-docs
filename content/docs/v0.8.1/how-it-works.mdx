@@ -75,14 +75,16 @@ export const auth = betterAuth({
 });
 ```
 
-Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in through your normal flow with the credentials they just set. See [The invite page](/docs/v0.7.0/invite-page#redeeming). And when an invitation email goes missing, [`invite.resend`](/docs/v0.7.0/invites#resending-an-invitation) invalidates the old link and delivers a fresh one.
+A redemption that sets a password never signs anyone in: after `ACCEPTED`, the user signs in through your normal flow with the credentials they just set. On [passwordless](/docs/v0.8.1/magic-link) apps a private redemption signs the user in directly (`signedIn: true`), since the emailed token already proved the mailbox; public redemptions never do. See [The invite page](/docs/v0.8.1/invite-page#redeeming). And when an invitation email goes missing, [`invite.resend`](/docs/v0.8.1/invites#resending-an-invitation) invalidates the old link and delivers a fresh one.
 
 ## The guarantees
 
 - **A database leak exposes no usable links.** Tokens are crypto-random and stored SHA-256 hashed; the raw token is never persisted.
 - **Exactly one winner.** All state changes are guarded atomic writes: parallel redemptions of a one-seat invite produce exactly one winner.
+- **A refused redemption leaves nothing behind.** Everything that can refuse (seat limits, organization plugin hooks, a taken slug, your own `onInviteAccepted`) runs before the account is touched, and any step that still fails undoes the ones before it: no password, no verified email, no role, no member row, no founded organization, and the invite stays usable for a retry.
 - **No cron, nothing to sweep.** Expiry is derived from `expiresAt` at read time.
-- **Pending invites lock their email.** While a private invite is pending, its email is locked on every path: sign-in, sign-up, password reset, and OAuth linking are all blocked without leaking that the invite exists.
+- **Pending invites lock their email.** A private invite pre-creates its user with only the default role. Until the invite is redeemed, database hooks refuse to verify that user, sign it in, or attach any account to it, on every path, without leaking that the invite exists. Withdrawing the invite removes the user.
+- **Inviting is not assigning.** Granting a role through an invite needs the same right as assigning it directly; see [Granting roles](/docs/v0.8.1/permissions#granting-roles).
 
 <Callout type="warn" title="Role changes made outside this plugin do not merge">
   The union merge above applies only to roles granted through invite redemption. Better Auth stores
@@ -90,8 +92,7 @@ Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in thr
   writers replace that string wholesale. The admin plugin's `setRole` is the usual culprit: it
   overwrites the field with exactly what you send, so calling it with just `"admin"` silently strips
   roles the user gained through invites. When you change roles from your own admin UI, always send
-  the full set. See the
-  [recipe](/docs/v0.7.0/recipes#changing-roles-without-losing-invite-granted-ones).
+  the full set. See the [recipe](/docs/v0.8.1/recipes#changing-roles-without-losing-invite-granted-ones).
 </Callout>
 
 ## Where to go next
@@ -101,12 +102,12 @@ Redemption itself never signs anyone in: after `ACCEPTED`, the user signs in thr
     icon={<Split />}
     title="The two modes"
     description="Invite-only and open, and how auto-detection picks one."
-    href="/docs/v0.7.0/modes"
+    href="/docs/v0.8.1/modes"
   />
   <Card
     icon={<Ticket />}
     title="Invites"
     description="Kinds, delivery types, and how to create each one."
-    href="/docs/v0.7.0/invites"
+    href="/docs/v0.8.1/invites"
   />
 </Cards>

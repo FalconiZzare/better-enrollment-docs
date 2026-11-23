@@ -66,7 +66,7 @@ A private invite can sign the accepter in directly because the emailed token alr
 
 ## Build the invite page
 
-The same [invite page](/docs/v0.7.0/invite-page) pattern works unchanged; `invite.get` tells you everything:
+The same [invite page](/docs/v0.8.1/invite-page) pattern works unchanged; `invite.get` tells you everything:
 
 ```ts title="app/invite/page.tsx"
 const info = await authClient.invite.get({ query: { token } });
@@ -95,22 +95,23 @@ With both `emailAndPassword` and magic link enabled, auto detection keeps the pa
 
 ## Built-in protection
 
-Magic-link verify signs in any existing user, and a private invite pre-creates one, so without a guard the invitee could sign in and skip your invite flow (no name, no [additional fields](/docs/v0.7.0/options#additional-fields), no audit row). The plugin ships three guards, active only in invite-only mode:
+Magic-link verify signs in any existing user, and a private invite pre-creates one, so without a guard the invitee could sign in and skip your invite flow (no name, no [additional fields](/docs/v0.8.1/options#additional-fields), no audit row). The plugin ships three guards, active only in invite-only mode:
 
 - A hook on `/sign-in/magic-link` silently skips sending for addresses held by a pre-created shell, returning the endpoint's normal success body: no dead link in the inbox, no invite oracle.
 - A hook on `/magic-link/verify` covers links already in flight: it rejects sign-ins for pre-created shells with `INVITATION_REQUIRED`, resolving the link's email without consuming the token and honoring the magic-link plugin's `storeToken` setting.
-- A `session.create.before` backstop covers verify paths the hook cannot resolve. Its path list is `passwordlessVerifyPaths` (default `["/magic-link/verify"]`); extend it if you add other passwordless plugins.
+- Database hooks on the shell itself refuse to verify it or sign it in from any path, so other passwordless plugins (email OTP, phone, your own) are covered without configuration. See [Security](/docs/v0.8.1/security#what-is-blocked-in-invite-only-mode).
 
-Existing accounts are never blocked (activation invites sign in normally), ordinary sign-ins cost zero extra queries, and [mode detection](/docs/v0.7.0/modes) counts the magic-link sign-up path, so `mode: "auto"` and the invite-only interlock both see it.
+Existing accounts are never blocked (activation invites sign in normally), ordinary sign-ins cost zero extra queries, and [mode detection](/docs/v0.8.1/modes) counts the magic-link sign-up path, so `mode: "auto"` and the invite-only interlock both see it.
 
 ## Options
 
 ```ts title="auth.ts"
 betterEnrollment({
-  passwordless: "auto", // true | false | "auto" (default)
-  passwordlessVerifyPaths: ["/magic-link/verify"] // paths the session backstop guards
+  passwordless: "auto" // true | false | "auto" (default)
 });
 ```
+
+`passwordlessVerifyPaths` is deprecated and ignored: the session guard now covers every path.
 
 ## Where to go next
 
@@ -119,12 +120,12 @@ betterEnrollment({
     icon={<PanelTop />}
     title="The invite page"
     description="One page for every invite kind, driven by nextAction and requiredFields."
-    href="/docs/v0.7.0/invite-page"
+    href="/docs/v0.8.1/invite-page"
   />
   <Card
     icon={<ShieldCheck />}
     title="Security"
     description="What is blocked, why, and how tokens are stored."
-    href="/docs/v0.7.0/security"
+    href="/docs/v0.8.1/security"
   />
 </Cards>
