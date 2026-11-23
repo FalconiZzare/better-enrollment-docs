@@ -56,11 +56,29 @@ betterEnrollment({
     teamId,
     maxUses,
     expiresAt
+  }) {},
+  async sendExistingAccountNotice({
+    email,
+    name,
+    url,
+    role,
+    kind,
+    mode,
+    inviterName,
+    inviterEmail,
+    organizationName,
+    inviteId,
+    organizationId,
+    organizationRole,
+    teamId,
+    expiresAt
   }) {}
 });
 ```
 
-Both functions run on create and on resend. `inviteId`, `organizationId`, `organizationRole` and `teamId` come straight from the invite row, so one template can word each kind of invite differently (a new organization's first owner versus a team member) without looking the invite up by its token. App and `org-create` invites pass `null` for the organization fields; `teamId` is set only when an `org-join` invite names a team. `organizationName` is the org's name for `org-join` invites and the [preset name](/docs/organizations#preset-organizations) for `org-create` invites that set one, otherwise `null`.
+The first two run on create and on resend. `inviteId`, `organizationId`, `organizationRole` and `teamId` come straight from the invite row, so one template can word each kind of invite differently (a new organization's first owner versus a team member) without looking the invite up by its token. App and `org-create` invites pass `null` for the organization fields; `teamId` is set only when an `org-join` invite names a team. `organizationName` is the org's name for `org-join` invites and the [preset name](/docs/organizations#preset-organizations) for `org-create` invites that set one, otherwise `null`.
+
+`sendExistingAccountNotice` runs when someone redeems a public link with the email of an existing account. The redeemer gets the same `CHECK_EMAIL` answer as for a new address, so this is how the account's owner hears about it: mail them `url`, the public link itself, to open after signing in. Without it nothing is sent. Its errors are logged, never returned, so a failing mailer cannot tell the two cases apart. Anyone holding the link can trigger it for any address, so rate limit or deduplicate these mails if that matters to you.
 
 <Callout type="warn" title="Escape what the inviter typed">
   `name` and `organizationName` are chosen by whoever sent the invite, and they reach a third

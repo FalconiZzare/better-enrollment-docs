@@ -12,8 +12,9 @@ status: updated
 The two calls your [invite page](/docs/invite-page) uses:
 
 ```ts
-authClient.invite.get({ token });
+authClient.invite.lookup({ token }); // or invite.get({ query: { token } })
 authClient.invite.redeem({ token, ... });
+// -> { action: "ACCEPTED", ... } or, for a public sign-up, { action: "CHECK_EMAIL" }
 ```
 
 ### Management [!updated]
