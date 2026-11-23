@@ -77,13 +77,13 @@ betterEnrollment({ ac, roles, permissionResource: "enrollment" });
 
 ### The invite actions
 
-| Action        | Gates                                                                 |
-| ------------- | --------------------------------------------------------------------- |
-| `create`      | `invite.create` (`org-create` also needs `manage-orgs`), and resend/list scoping for org members |
-| `resend`      | `invite.resend`                                                       |
-| `list`        | `invite.list`, `invite.org.usage`                                     |
-| `cancel`      | `invite.revoke`                                                       |
-| `delete`      | `invite.delete`                                                       |
+| Action        | Gates                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`      | `invite.create` (`org-create` also needs `manage-orgs`), and resend/list scoping for org members                                        |
+| `resend`      | `invite.resend`                                                                                                                         |
+| `list`        | `invite.list`, `invite.org.usage`                                                                                                       |
+| `cancel`      | `invite.revoke`                                                                                                                         |
+| `delete`      | `invite.delete`                                                                                                                         |
 | `manage-orgs` | `org-create` invites (create, public resend, redeeming your own), `invite.org.setSeatLimit`, `invite.org.disable` / `enable` / `delete` |
 
 `inviteAdminAc` grants all six; `inviteUserAc` grants none.
@@ -171,7 +171,7 @@ If you gate management with `canManageInvites` and have no admin plugin, there i
 2. The role is listed for one of the inviter's org roles in `organization.grantableRoles`.
 3. The inviter holds `member: ["update"]` in that organization, the permission the org plugin requires to change a member's role. The org plugin's `creatorRole` (default `owner`) always passes.
 
-Roles that control the org, `owner` and the org plugin's `creatorRole`, keep their own rule: they need `allowOwnerInvites` and an inviter who holds one of them. It applies at creation (`OWNER_INVITES_NOT_ALLOWED`), on a public resend (`ORG_ROLE_NOT_GRANTABLE`), when the inviter's org role changes, and when you redeem your own invite. A refused inviter for any other role gets `ORG_ROLE_NOT_GRANTABLE`.
+The org plugin's `creatorRole` (`owner` unless you change it) keeps its own rule, as in the org plugin: it needs `allowOwnerInvites` and an inviter who holds that role. With a custom `creatorRole`, a role merely named `owner` is an ordinary role. It applies at creation (`OWNER_INVITES_NOT_ALLOWED`), on a public resend (`ORG_ROLE_NOT_GRANTABLE`), when the inviter's org role changes, and when you redeem your own invite. A refused inviter for any other role gets `ORG_ROLE_NOT_GRANTABLE`.
 
 ### Resending and redeeming
 
