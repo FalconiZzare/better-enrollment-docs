@@ -55,6 +55,7 @@ Each of these is on by default and has an opt-out.
 
 - **Better Auth 1.7.2x**: requests could hang on SQLite when a plugin database hook ran inside a Better Auth transaction.
 - **Password reset and magic link**: a malformed email gets `400` instead of `500`.
+- **Client on Better Auth 1.6**: the org name and slug checks answer locally there too, instead of sending the request.
 
 ### Deprecations
 
